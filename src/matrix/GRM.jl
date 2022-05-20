@@ -34,7 +34,7 @@ function grm(gt)
             file = basename(tempname()) # will write the result in pwd.
             @info "G is too big to fit in memory and will be written into $file"
             # ToDo: check disk space here
-            m = Sys.free_memory() / 8 / nid
+            m = Int(floor(Sys.free_memory() / 8 / nid))
             m = MISC.blksz(nid, m) # determine number of ID to be dealed a time
             stops = collect(m:m:nid)
             stops[end] == nid || push!(stops, nid)

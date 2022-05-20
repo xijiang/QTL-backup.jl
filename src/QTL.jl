@@ -7,7 +7,7 @@ include("matrix/matrix.jl")
 include("io/IO.jl")
 include("simulation/simulation.jl")
 
-using .MISC, .MATRIX, .MIO, .SIMU
+using .MISC, .MAT, .MIO, .SIMU
 
 export mytest
 
