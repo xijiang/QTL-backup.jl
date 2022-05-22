@@ -21,7 +21,7 @@ function grm(gt)
     else                        # minimal memory mode
         c1 = 2gt'p
         c2 = 4p'p
-        if nid^2 * 8 < Sys.free_memory() # G can still be fit
+        if nid^2 * 8 < mem      # G can still be fit
             @info "only G were stored in memory"
             G = zeros(nid, nid)
             matmul!(G, gt', gt)
