@@ -10,3 +10,12 @@ They are grouped in the following sections:
 - `Matrices`, matrix manipulation algorithms
 - `Notes`, including some standard procedures
 - to be continued
+
+
+# Version log
+Newest first
+
+- v0.1.2: (large) GRM construction and inverse
+  - QTL.MAT.grm
+- v0.1.1: quick genotype simulation, no LD.
+  - QTL.MISC.quick_g, matrix I/O

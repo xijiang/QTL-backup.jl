@@ -68,3 +68,27 @@ function read012(file)
     end
     gt
 end
+
+"""
+    function fl23c(ifile, ofile)
+Convert the lower triangle of a symmatric matrix to 3-column format.
+Using IOBuffer to speed up file writing.
+"""
+function fl23c(ifile, ofile)
+    d1, d2, type = begin
+        t = zeros(Int, 3)
+        read!(ifile, t)
+        t[1], t[2], codet(t[3])
+    end
+    t[1] ≠ t[2] && error("Not symmatric")
+    m = Mmap.mmap(ifile, Matrix{type}, (d1, d2), 24)
+    open(ofile, "w") do oo
+        for i in 1:d1
+            bf = IOBuffer()
+            for j in 1:i
+                m[i, j] == 0 || println(bf, "$i\t$j\t$(m[i,j])")
+            end
+            print(oo, String(take!(bf)))
+        end
+    end
+end

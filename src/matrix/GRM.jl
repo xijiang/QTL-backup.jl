@@ -12,8 +12,10 @@ function grm(gt)
     p = mean(gt, dims = 2) ./ 2 # allele frequencies
     d = 2(1 .- p)'p             # the denominator
     nlc, nid = size(gt)
-    mem = MISC.memavail()
-    if (nid^2 + nid*nlc)*8 < mem # brute force
+    mem = MISC.memavail() * 99 ÷ 100 # not all available memory
+    gmt = nid^2 * 8             # memory by G
+    zmt = nid * nlc * 8         # memory by Z
+    if gmt + zmt < mem          # brute force
         @info "G and Z are stored in memory"
         Z = gt .- 2p
         G = Z'Z ./ d
@@ -21,7 +23,7 @@ function grm(gt)
     else                        # minimal memory mode
         c1 = 2gt'p
         c2 = 4p'p
-        if nid^2 * 8 < mem      # G can still be fit
+        if gmt < mem            # G can still be fit
             @info "only G were stored in memory"
             G = zeros(nid, nid)
             matmul!(G, gt', gt)
