@@ -12,6 +12,11 @@ function example_large_grm_inv(file)
     G
 end
 
-function mytest(gt)
-    grm(gt)
+function mytest(m)
+    nlc, nid = size(m)
+    y = ones(nid + 1)
+    x = ones(nid + 1)
+    h² = .8
+    rrblup_mme(x, m, y, h²; dd = 0, norm = false)
+    EVAL.rrblup_mme(gt)
 end
