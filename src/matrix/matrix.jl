@@ -5,5 +5,5 @@ include("GRM.jl")
 include("cholesky.jl")
 include("ipcd.jl")
 
-export grm
+export grm, pivoted_cholesky_decomposition!
 end

@@ -12,7 +12,7 @@ function example_large_grm_inv(file)
     G
 end
 
-function mytest(m)
+function mytest(m, y)
     nlc, nid = size(m)
     y = ones(nid + 1)
     x = ones(nid + 1)

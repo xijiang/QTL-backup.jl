@@ -1,4 +1,5 @@
 """
+    function grm(gt)
 Given the genotypes of `Matrix{Int8}`, this function calculate the genomic 
 relationship matrix `GRM`. If the matrix is too big, the content will be 
 calculated block by block and written to a file, else it will return a 
@@ -34,7 +35,9 @@ function grm(gt)
             return G
         else                            # G is too large
             file = basename(tempname()) # will write the result in pwd.
-            @info "G is too big to fit in memory and will be written into $file"
+            @warn "G is too big to fit in memory. It is being writting into $file.
+              False will be returned. $file can be read back in to memory, if enough,
+              with `QTL.MIO.readmat($file)`"
             # ToDo: check disk space here
             m = mem ÷ 8 ÷ nid
             m = MISC.blksz(nid, m) # determine number of ID to be dealed a time
