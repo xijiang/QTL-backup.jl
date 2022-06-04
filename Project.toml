@@ -1,7 +1,7 @@
 name = "QTL"
 uuid = "272614b1-7590-4f3c-ab34-bb6a9ad933d0"
 authors = ["Xijiang Yu <xijiang@users.noreply.github.com>"]
-version = "0.1.5"
+version = "0.1.6"
 
 [deps]
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
@@ -17,3 +17,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 CodecZlib = "0.1.5"
 Distributions = "0.25.62"
 Octavian = "0.3.14"
+julia = "1.6"
