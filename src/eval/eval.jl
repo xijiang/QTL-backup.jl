@@ -1,4 +1,4 @@
-module EVAL
+module Bv
 using Octavian, LinearAlgebra, Statistics
 
 include("rrblup.jl")

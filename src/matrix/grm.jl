@@ -7,13 +7,18 @@ calculated block by block and written to a file, else it will return a
 
 By default the matrix needs to be 'nlc by nid' to speed up the calculation.
 Such a matrix stores the genotypes continuously, which can speed up the 
-matrix multiplication very much.
+matrix multiplication very much.  Another reason is that genotypes are
+usually stored continuous for each individual.  They can can be read 
+continuously in the `gt` columns.
+
+If a `δ`, e.g., `δ = 0.01`, to the diagonals, you have to do this after this
+function.
 """
 function grm(gt)
     p = mean(gt, dims = 2) ./ 2 # allele frequencies
     d = 2(1 .- p)'p             # the denominator
     nlc, nid = size(gt)
-    mem = MISC.memavail() * 99 ÷ 100 # not all available memory
+    mem = Aux.memavail() * 99 ÷ 100 # not all available memory
     gmt = nid^2 * 8             # memory by G
     zmt = nid * nlc * 8         # memory by Z
     if gmt + zmt < mem          # brute force
@@ -40,7 +45,7 @@ function grm(gt)
               with `QTL.MIO.readmat($file)`"
             # ToDo: check disk space here
             m = mem ÷ 8 ÷ nid
-            m = MISC.blksz(nid, m) # determine number of ID to be dealed a time
+            m = Aux.blksz(nid, m) # determine number of ID to be dealed a time
             stops = collect(m:m:nid)
             stops[end] == nid || push!(stops, nid)
             start = 1
@@ -60,4 +65,7 @@ function grm(gt)
             return false
         end
     end
+end
+
+function grm2(gt)
 end

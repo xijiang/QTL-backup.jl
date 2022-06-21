@@ -1,22 +1,8 @@
-function example_large_grm_inv(file)
-    BLAS.set_num_threads(Threads.nthreads())
-    gt = MIO.read012(file)
-    MIO.writemat("gt.bin")
-    G = MAT.grm(gt)
-    if G != false
-        MIO.writemat("G.bin")
-        LAPACK.potrf!('L', G)
-        LAPACK.potri!('L', G)
-        MIO.writemat("Gi.bin")
-    end
-    G
-end
-
-function mytest(m, y)
-    nlc, nid = size(m)
-    y = ones(nid + 1)
-    x = ones(nid + 1)
-    h² = .8
-    rrblup_mme(x, m, y, h²; dd = 0, norm = false)
-    EVAL.rrblup_mme(gt)
+function mytest(sdir, nc, tdir, δ)
+    fg   = "$sdir/G.bin"
+    fpiv = "$sdir/piv.bin"
+    fid  = "$sdir/id.bin"
+    
+    fg11, fg21, fd22 = QTL.Mat.extract_subs(fg, fpiv, nc, tdir)
+    QTL.Mat.approxgi(fg11, fg21, fd22, fpiv, fid, tdir, δ = δ)
 end

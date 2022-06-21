@@ -1,10 +1,9 @@
-module MAT
-using LinearAlgebra, Octavian, Statistics, Mmap, ..MISC
+module Mat
+using LinearAlgebra, Octavian, Statistics, Mmap, ..Aux, ..Fio
 
-include("GRM.jl")
+include("grm.jl")
 include("cholesky.jl")
-include("ipcd.jl")
-#include("pstrf2approxGi.jl")
+include("coresub.jl")
+include("approxGi.jl")
 
-export grm, pivoted_cholesky_decomposition!
 end

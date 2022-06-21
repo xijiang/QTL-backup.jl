@@ -1,14 +1,16 @@
 module QTL
 using LinearAlgebra, Statistics, Octavian
 
-include("misc/misc.jl")
-include("mytest.jl")
-include("matrix/matrix.jl")
-include("io/IO.jl")
-include("simulation/simulation.jl")
-include("eval/eval.jl")
+include("aux/aux.jl")
+include("fio/fio.jl")
+include("simu/simu.jl")
 
-using .MISC, .MAT, .MIO, .SIMU, .EVAL
+include("matrix/matrix.jl")
+include("eval/eval.jl")
+include("web/web.jl")
+include("mytest.jl")
+
+using .Aux, .Fio, .Mat, .Sim, .Bv, .Web
 
 export mytest
 

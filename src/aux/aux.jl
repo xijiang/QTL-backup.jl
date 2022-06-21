@@ -1,4 +1,4 @@
-module MISC
+module Aux
 
 include("even-group.jl")
 include("avail-mem.jl")

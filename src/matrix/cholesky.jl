@@ -1,5 +1,5 @@
 """
-    function ordinary_cholesky_decomposition!(A)
+    function ordinary_cholesky_decomposition!(A; tol = 1e-5)
 This function is just for fun, and should not be taken seriously.
 The lower triangle of matrix `A` will be replace by `L`, such that
 the original `A = LL'`.
@@ -7,16 +7,18 @@ the original `A = LL'`.
 This is also algorithm 1 of
 https://www.maths.manchester.ac.uk/~higham/papers/high09c.pdf
 """
-function ordinary_cholesky_decomposition!(A)
+function ordinary_cholesky_decomposition!(A; tol = 1e-5)
     issymmetric(A) || error("Not a symmetric matrix")
     n = size(A)[1]
     for i in 1:n
+        A[i, i] < tol && return i - 1 # A is modified, no need to return.
         A[i, i] = sqrt(A[i, i] - A[i, 1:i-1]'A[i, 1:i-1])
         for j in i+1:n
             A[j, i] -= A[i, 1:i-1]'A[j, 1:i-1]
             A[j, i] /= A[i, i]
         end
     end
+    n
 end
 
 """
@@ -25,6 +27,8 @@ https://www.maths.manchester.ac.uk/~higham/papers/high09c.pdf
 algorithm 2.
 It is also the same as algorithm 1 in
 http://www.mucm.ac.uk/Pages/Downloads/Internal%20Reports/INT2.2.1%20LB%20Pivoting%20Cholesky%20Decomposition.pdf.
+
+This is for demonstration only, too slow to deal with a large matrix.
 """
 function cholesky_decomposition!(A; tol=1e-5)
     issymmetric(A) || error("Not a symmetric matrix")
@@ -37,7 +41,7 @@ function cholesky_decomposition!(A; tol=1e-5)
         A[r, i] ./= A[i, i]
         A[r, r] -= A[r, i] * A[r, i]'
     end
-    A, rank
+    rank
 end
 
 """
@@ -46,6 +50,8 @@ end
 - Algorithm https://mogp-emulator.readthedocs.io/en/latest/methods/proc/ProcPivotedCholesky.html
 
 Return pivoted A, with factor in 'L', `piv`, and `rank`.
+
+This is for demonstration only, too slow to deal with a large matrix.
 """
 function pivoted_cholesky_decomposition!(A; tol = 1e-5)
     issymmetric(A) || error("Not a symmetric matrix")
@@ -61,5 +67,5 @@ function pivoted_cholesky_decomposition!(A; tol = 1e-5)
         A[r, p[i]] ./= A[p[i], p[i]]
         A[r, r] -= A[r, p[i]] * A[r, p[i]]'
     end
-    A[p, p], p, n
+    p, n
 end

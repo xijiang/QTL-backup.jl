@@ -1,4 +1,51 @@
 """
+    function gt2approxgi(gt, nc; δ = 0.01)
+Given 012 genotyps of nID by nLoci, this function find the `nc` core ID with
+incomplete Cholesky decomposition.
+It then construct an approximate G inverse with these info.
+"""
+function gt2approxgi(gt, nc; δ = 0.01)
+    #p = 
+end
+
+# """
+#     function bipcd(gf, dg, nc, odir; δ = 0.01)
+# Given a **G** matrix file `gf`, which is too big to store in memory,
+# this function write `g11`, `g21`, and corrected `d` into directory `odir`.
+# `g11` is for the first `nc` ID if to do a pivoted Cholesky decomposition on G.
+# 
+# Disk I/O were kept minimum.  **G** diagonals are hence stored separately.
+# """
+# function bipcd(gf, dg, nc, odir; δ = 0.01, tol = 1e-5)
+#     open(gf, "r") do io
+#         n, type = begin
+#             a = zeros(Int, 3)
+#             read!(io, a)
+#             a[1] ≠ a[2] && error("Not a square matrix")
+#             a[1], MIO.codet(a[3])
+#         end
+#         
+#         d = zeros(type, nid)
+#         read!(dg, d)
+#         d .+= δ                 # diagonals
+#         p = collect(1:nid)      # pivots
+#         
+#         l = zeros(type, nid, nc) # vcat(g11, g21)
+#         v = zeros(type, nid)     # a column of G
+#         for i in 1:nc
+#             j = argmax(d[i:end]) + i - 1
+#             p[i], p[j] = p[j], p[i]
+#             d[i], d[j] = d[j], d[i] # pivot
+#             d[i] = sqrt(d[i])
+#             read!(io, v)        # dealing column by column
+#             v
+#         end
+#     end
+# end
+
+
+#=
+"""
     function readInt(file)
 This small function read the first 64-bit integer of a file, 
 which is usually the dimesion of a sqaure matrix.
@@ -196,3 +243,4 @@ function teaser(gf)
     gt = mmap(gf, Matrix{Int8}, dms, 24)
     mean(gt, dims = 2)
 end
+=#
