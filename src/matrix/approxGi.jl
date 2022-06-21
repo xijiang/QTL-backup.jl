@@ -66,6 +66,11 @@ function approxgi(fg11, fg21, fd22, fpiv, fid, dir; δ = 0.)
     nr, nc = size(g21)
     nid = nr + nc
     tag = string(nc ÷ 1000) * "k"
+    if δ == 0.
+        tag *= "0"
+    else
+        tag *= "1"
+    end
     d22 = zeros(nr)             # d22
     read!(fd22, d22)
     piv = zeros(Int, nid)
