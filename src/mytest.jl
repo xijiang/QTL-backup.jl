@@ -4,13 +4,8 @@ function mytest(sdir, nc, tdir, δ)
     fid  = "$sdir/id.bin"
     
     # fg11, fg21, fd22 = QTL.Mat.extract_subs(fg, fpiv, nc, tdir)
-    if δ == 0.
-        d = '0'
-    else
-        d = '1'
-    end
-    fg11 = "$tdir/g11-$(nc÷1000)k$d.bin"
-    fg21 = "$tdir/g21-$(nc÷1000)k$d.bin"
-    fd22 = "$tdir/d22-$(nc÷1000)k$d.bin"
+    fg11 = "$tdir/g11-$(nc÷1000)k.bin"
+    fg21 = "$tdir/g21-$(nc÷1000)k.bin"
+    fd22 = "$tdir/d22-$(nc÷1000)k.bin"
     QTL.Mat.approxgi(fg11, fg21, fd22, fpiv, fid, tdir, δ = δ)
 end
