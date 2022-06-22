@@ -103,8 +103,8 @@ function approxgi(fg11, fg21, fd22, fpiv, fid, dir; δ = 0.)
     BLAS.gemm!('T', 'N', 1., g21, w21, 0., w11)
 
     @info "g11 inverse"
-    _, _, rk, _ = LAPACK.potrf!('L', g11)
-    rk < nc && error("Not full rank")
+    _, info = LAPACK.potrf!('L', g11)
+    info ≠ 0 && error("Not full rank")
     
     LAPACK.potri!('L', g11)
     for i in 1:nc
