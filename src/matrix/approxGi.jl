@@ -65,14 +65,18 @@ function approxgi(fg11, fg21, fd22, fpiv, fid, dir; δ = 0.)
     g21 = Fio.readmat(fg21)     # g21
     nr, nc = size(g21)
     nid = nr + nc
+    d22 = zeros(nr)             # d22
+    read!(fd22, d22)
     tag = string(nc ÷ 1000) * "k"
     if δ == 0.
         tag *= "0"
     else
         tag *= "1"
+        for i in 1:nc
+            g11[i, i] += δ
+        end
+        d22 .+= δ
     end
-    d22 = zeros(nr)             # d22
-    read!(fd22, d22)
     piv = zeros(Int, nid)
     read!(fpiv, piv)
     sort!(view(piv, 1:nc))
