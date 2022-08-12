@@ -67,5 +67,44 @@ function grm(gt)
     end
 end
 
-function grm2(gt)
+#=
+# below was to test storing genotypes in bits. 
+# found it very tedious. not much speed gain.
+# probably will never consider this later.
+"""
+    function grm2()
+This function uses `popcnt` and logic operation `and` to incease GRM calculation.
+"""
+function grm2()
+    @info "Testing matrix storage"
+    nid, nlc = 200, 12800
+    nhp, nit = 2nid, nlc ÷ 64
+    ga = rand(Int, nit, 2nid)
+    gb = zeros(nlc, nid)
+    for i in 1:nid
+        for j in 1:nit
+            a = Float64.(collect(bitstring(ga[j, 2i-1])))
+            b = Float64.(collect(bitstring(ga[j, 2i])))
+            copyto!(view(gb, 64j-63:64j, i), (a+b) .- 96)
+        end
+    end
+    ga, gb
 end
+
+function bypopcnt(gt)
+    nit, nhp = size(gt)
+    nid = nhp ÷ 2
+    g = zeros(nid, nid)
+    Threads.@threads for i in 1:nid
+        for j in 1:i
+            for k in 1:nit
+                g[i, j] += count_ones(gt[k, 2i - 1] & gt[k, 2j - 1]) +
+                           count_ones(gt[k, 2i - 1] & gt[k, 2j]) +
+                           count_ones(gt[k, 2i] & gt[k, 2j - 1]) +
+                           count_ones(gt[k, 2i] & gt[k, 2j])
+            end 
+        end
+    end
+    g
+end
+=#

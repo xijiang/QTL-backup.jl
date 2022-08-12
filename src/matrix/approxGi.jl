@@ -1,3 +1,8 @@
+# this file was a shortcut to approximate G inverse, when pivots are known.
+# it turned out that selection the first n ID from pivots is no better 
+# than random set.
+# this try is dropped.
+
 """
     function extract_subs(G, piv, nc, dir)
 Given file names for `G`.bin, `piv`.bin, number of core animals `nc`, and output 
