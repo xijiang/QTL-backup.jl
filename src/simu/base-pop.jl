@@ -164,11 +164,16 @@ Merge and convert `MaCS` results to `01` allele types of `nHap` by `nLoc`.
 Each column in the result file is a locus.
 Path `raw` stores the `MaCS` results.
 Results are written in the parent directory of `raw`.
-The linkage map is a DataFrame, and serialized to `map.ser` in the parent dir of `raw` also.
+File names are of format `chr.1`, `.2`, etc, for genotypes.
+And `info.1`, etc for error message from `macs`.
+The linkage map is a DataFrame,
+and serialized to `map.ser` in the parent dir of `raw` also.
 
 ## Binary file `macs.gt`:
 - nhap, nlc, 1: the first 3 × 8 bytes. 1 is for `Int8`.
 - then `01` allele types
+
+Note, elsewhere I use `nlc×nid`, or `nhap×nid` dimensions.
 """
 function macs_2_hap(raw)
     isdir(raw) || error("$raw not exists")
@@ -178,7 +183,6 @@ function macs_2_hap(raw)
         occursin.(r"^chr", f) && push!(chrs, parse(Int8, split(f, '.')[2]))
     end
     sort!(chrs)           # chromosome number in integer, and in order
-    
     parent = dirname(raw) # path
     bar =  randstring(5)  # barcode of this simulation
     fgt = joinpath(parent, "$bar-hap.bin")
@@ -189,7 +193,7 @@ function macs_2_hap(raw)
         for ic in chrs
             this_chr = joinpath(raw, "chr.$ic")
             @info "Dealing with $this_chr"
-            nbp = parse(Int, split(readline(this_chr))[4])
+            nbp = parse(Float64, split(readline(this_chr))[4])
             for line in eachline(this_chr)
                 line[1:4] ≠ "SITE" && continue
                 _, _, pos, _, as = split(line)

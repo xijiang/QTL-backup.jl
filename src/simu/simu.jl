@@ -6,6 +6,7 @@ include("quick-simu.jl")
 include("sim-qtl.jl")
 include("base-pop.jl")
 include("mate.jl")
+include("phenotype.jl")
 
 export qsgt, simQTL, simPtQTL
 

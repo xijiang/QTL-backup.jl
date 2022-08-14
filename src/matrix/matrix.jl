@@ -6,5 +6,6 @@ include("cholesky.jl")
 include("coresub.jl")
 include("approxGi.jl")
 include("ld.jl")
+include("hap2gt.jl")
 
 end

@@ -104,7 +104,7 @@ function gamete(prt, hap, lms)
     cvs = crossovers(lms)
     h, l = cvs[1], 1            # starting
     for cv in cvs[2:end]
-        copyto!(view(hap, l:cv), view(prt, h, l:cv))
+        copyto!(view(hap, l:cv), view(prt, l:cv, h))
         l = cv + 1
         h = 3 - h
     end
@@ -115,17 +115,18 @@ end
 Drop haplotypes `pg` of parents into `og`, their offspring genotypes.
 Parents of each offspring are defined in `pm`, which are rows of ``pa ma``.
 Linkage map summary `lms` is from `summap`.
+
+Note `g0` is of `nhap×nlc`, use `g0'` to feed this function.
 """
 function drop(pg, og, pm, lms)
-    id = 1
-    for (ip, im) in eachrow(pm)
-        pa = view(pg, 2ip-1:2ip, :)
-        zi = vec(view(og, 2id-1, :))
+    dpm = [1:size(pm)[1] pm]
+    for (id, ip, im) in eachrow(dpm)
+        pa = view(pg, :, 2ip-1:2ip)
+        zi = vec(view(og, :, 2id-1))
         gamete(pa, zi, lms)
-        ma = view(pg, 2im-1:2im, :)
-        zi = vec(view(og, 2id, :))
+        ma = view(pg, :, 2im-1:2im)
+        zi = vec(view(og, :, 2id))
         gamete(ma, zi, lms)
-        id += 1
     end
 end
 
