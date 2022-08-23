@@ -15,7 +15,8 @@ end
 
 """
     function gwas(ilhs, a; window = 10)
-This function uses inversed `lhs` from `rrblup_mme`, with the inversed in `L` triangle. 
+This function uses inversed `lhs` from `rrblup_mme`,
+with the inversed in `L` triangle. 
 Then calculate `emmax` and `bf` (Bayes factor) of the estimated `a`.
 
 ## Reference
@@ -50,9 +51,10 @@ Return `DataFrame(:pos, :ts)` on reverse order of `:ts`.
 function find_peaks(ts)
     pks = DataFrame(pos = Int[], ts = Float64[])
     p = 0
-    for i in 1:length(ts)
+    for i in eachindex(ts)
         p > ts[i] && push!(pks, (i - 1, p))
         p = ts[i]
     end
-    sort!(pks, [:ts], rev = true)
+
+    sort!(pks, :ts, rev=true)
 end

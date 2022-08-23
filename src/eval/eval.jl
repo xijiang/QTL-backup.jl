@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 module Bv
 using Octavian, LinearAlgebra, Statistics
 

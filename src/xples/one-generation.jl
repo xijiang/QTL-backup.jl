@@ -1,5 +1,13 @@
+# SPDX-License-Identifier: MIT
+
 """
-    function generation_one_gwas(; nsire=100, ndam=200, nsib=30, nrpt=10, dir="dat")
+    generation_one_gwas(;
+                        nsire = 100,
+                        ndam  = 200,
+                        nsib  = 30,
+                        nrpt  = 10,
+                        h²    = .8,
+                        dir   = "dat")
 Simulate one genration data for GWAS scan investigations.
 """
 function generation_one_gwas(;
@@ -52,4 +60,6 @@ function create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
     QTL.Mat.hap2gt(g0'), QTL.Mat.hap2gt(g1)
 end
 
+function dry_run()
     
+end

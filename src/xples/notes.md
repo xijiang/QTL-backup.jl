@@ -1,3 +1,5 @@
+<!--# SPDX-License-Identifier: MIT-->
+
 # Notes
 This folder contains some example pipelines that I used.
 

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 module Sim
 using Distributions, Random, Statistics, Octavian, LinearAlgebra, DataFrames
 using Serialization

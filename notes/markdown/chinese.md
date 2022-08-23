@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 ---
 title: 中文使用
 author: 于希江

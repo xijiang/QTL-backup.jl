@@ -148,9 +148,9 @@ function sim_salmon_seq(macs, dir; nid = 4000)
     isdir(dir) || mkpath(dir)
     wdir = mktempdir(dir)
     
-    Threads.@threads for chr in 1:length(lns)
-        # cmd = `$macs $(2nid) $(lns[chr]) -t $θ -r $ρ -eN $t1 $s1 -eN $t2 $s2 -eN $t3 $s3`
-        cmd = `$macs $(2nid) $(lns[chr]) -t $θ -r $ρ -eN 0.25 5.0 -eN 2.50 15.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0`
+    Threads.@threads for nbp in lns
+        # cmd = `$macs $(2nid) $nbp -t $θ -r $ρ -eN $t1 $s1 -eN $t2 $s2 -eN $t3 $s3`
+        cmd = `$macs $(2nid) $nbp -t $θ -r $ρ -eN 0.25 5.0 -eN 2.50 15.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0`
         run(pipeline(cmd,
                      stderr = joinpath(wdir, "info.$chr"),
                      stdout = joinpath(wdir, "chr.$chr")))
