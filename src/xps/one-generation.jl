@@ -80,7 +80,7 @@ function generation_one_gwas(;
                     println("\n\n")
                     elapse = canonicalize(now() - stime)
                     dstr = _str_dist(d)
-                    @info "Running $dstr nqtl=$nqtl blocksize=$bs repeat=$r, ELAPSE = $elapse"
+                    @info "Running $dstr nqtl=$nqtl blocksize≈$bs repeat=$r, ELAPSE = $elapse"
                     bar = create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
                     qtl, pht, mlc = _bv_pht_bs(dir, bar, nqtl, h², d, bs)
                     rst = Bv.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
@@ -93,10 +93,10 @@ function generation_one_gwas(;
                               lpad(bs, 6),
                               lpad(r, 4))
                         for w in [10, 20, 50]
-                            print(io, lpad(length(intersect(pka.emmax[1:w], qtl.locus)), 4))
+                            print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
                         end
                         for w in [10, 20, 50]
-                            print(io, lpad(length(intersect(pka.bf[1:w], qtl.locus)), 4))
+                            print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
                         end
                         println(io)
                     end
