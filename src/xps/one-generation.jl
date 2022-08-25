@@ -24,14 +24,21 @@ function create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
     bar
 end
 
-function _bv_pht_bs(dir, bar, nqtl, h², d)
+function _bv_pht_bs(dir, bar, nqtl, h², d, mlc)
     g0 = Fio.readmat("$dir/$bar-f0.bin")
     g1 = Fio.readmat("$dir/$bar-f1.bin")
     qtl = Sim.simQTL(g0, nqtl, d=d)[1]
     bv = Sim.breeding_value(g1, qtl)
     pht = Sim.phenotype(bv, h²)
-    bs = Aux.blksz(size(g1)[1], nlc)
+    bs = Aux.blksz(size(g1)[1], mlc)
     qtl, pht, bs
+end
+
+function _str_dist(d)
+    str = string(d)
+    f = findfirst('.', str) + 1
+    t = findfirst('{', str) - 1
+    str[f:t]
 end
 
 """
@@ -52,9 +59,10 @@ function generation_one_gwas(;
                              h²    = .8,
                              dir   = "dat")
     macs = Sim.make_macs(tdir = dir)
+    stime = now()
     open("$dir/result.txt", "w") do io
         println(io,
-                lpad("Dist", 5),
+                lpad("Distribn", 8),
                 lpad("nQTL", 5),
                 lpad("blksz", 6),
                 lpad("rpt", 4),
@@ -69,14 +77,18 @@ function generation_one_gwas(;
         for nqtl in [500, 1_000, 2_000]
             for bs in [10_000, 30_000, 50_000] # random block size
                 for r in 1:3
+                    println("\n\n")
+                    elapse = canonicalize(now() - stime)
+                    dstr = _str_dist(d)
+                    @info "Running $dstr nqtl=$nqtl blocksize=$bs repeat=$r, ELAPSE = $elapse"
                     bar = create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
-                    qtl, pht, bs = _bv_pht_bs(dir, bar, nqtl, h², d)
-                    rst = Bv.random_scan("$dir/$bar-f1.bin", pht, h², mlc=bs)
+                    qtl, pht, mlc = _bv_pht_bs(dir, bar, nqtl, h², d, bs)
+                    rst = Bv.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
                     pka = Bv.find_peaks(rst.emmax)
-                    pkb = Bv.Find_peaks(rst.bf)
+                    pkb = Bv.find_peaks(rst.bf)
                     open("$dir/result.txt", "a") do io
                         print(io,
-                              lpad(string(d)[1:4], 5),
+                              lpad(dstr, 8),
                               lpad(nqtl, 5),
                               lpad(bs, 6),
                               lpad(r, 4))
@@ -95,14 +107,4 @@ function generation_one_gwas(;
             end
         end
     end
-end
-
-function dry_run()
-    g0 = Fio.readmat("dat/bzTG3-f0.bin")
-    g1 = Fio.readmat("dat/bzTG3-f1.bin") # both nlc × nid
-    qtl = Sim.simQTL(g0, 1000)[1]
-    bv  = Sim.breeding_value(g1, qtl)
-    pht = Sim.phenotype(bv, .8) # h² = .8
-    mlc = Aux.blksz(size(g1)[1], 10_000)
-    rst = Bv.random_scan("dat/bzTG3-f1.bin", pht, .8, mlc=mlc)
 end
