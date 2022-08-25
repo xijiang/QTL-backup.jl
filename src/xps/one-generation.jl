@@ -51,7 +51,7 @@ function generation_one_gwas(;
                              nrpt  = 10,
                              h²    = .8,
                              dir   = "dat")
-    macs = QTL.Sim.make_macs(tdir = dir)
+    macs = Sim.make_macs(tdir = dir)
     open("$dir/result.txt", "w") do io
         println(io,
                 lpad("Dist", 5),
