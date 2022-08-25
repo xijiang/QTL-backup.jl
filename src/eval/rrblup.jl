@@ -23,7 +23,7 @@ function rrblup_mme(x, z, y, h²; dd = 0, norm = false)
     nf = size(x, 2)
     nb = nf + nlc           # total number of factors (fixed + random)
 
-    mem = MISC.memavail() * 99 ÷ 100 # not all available memory
+    mem = Aux.memavail() * 99 ÷ 100 # not all available memory
     mlh = nb^2 * 8                   # memory for LHS
     mem < mlh && error("Not enough memory for this calculation")
     

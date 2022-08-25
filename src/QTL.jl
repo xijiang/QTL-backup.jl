@@ -9,8 +9,8 @@ include("matrix/matrix.jl")
 include("simu/simu.jl")
 
 include("eval/eval.jl")
-include("xples/xples.jl")
+include("xps/xps.jl")
 
-using .Aux, .Fio, .Mat, .Sim, .Bv, .Xpl
+using .Aux, .Fio, .Mat, .Sim, .Bv, .Xps
 
 end # module QTL

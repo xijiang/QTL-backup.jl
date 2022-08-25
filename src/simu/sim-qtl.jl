@@ -1,7 +1,7 @@
 """
     function simQTL(gt, nqtl...; d = Laplace(), ϵ = 1e-5, norm = true)
 ## Description
-Given genotype `gt` of nLocus by nID, this function sample `nqtl` loci as QTL.
+Given genotype `gt` of `nLoc × nID`, this function sample `nqtl` loci as QTL.
 QTL effects are distributed as Laplace by default.  After this sampling, their 
 signs are randomly flipped.
 This also normalize the true breeding values to have approximate mean 0, 

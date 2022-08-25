@@ -129,4 +129,13 @@ function snp2gt(ifile, ofile; missing=0)
         end
     end
 end
-            
+
+"""
+    function readmdm(file)
+Return the size of the matrix in `file`.
+"""
+function readmdm(file)
+    dim = zeros(Int, 2)
+    read!(file, dim)
+    dim
+end

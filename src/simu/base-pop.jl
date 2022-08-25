@@ -74,7 +74,9 @@ wget https://ftp.ncbi.nlm.nih.gov/genomes/genbank/vertebrate_other/Salmo_salar/l
 grep total-length G*.txt | grep assembled | gawk '{print \$3, \$7}' | tail -n+2
 ```
 
-It is assummed that the wild salmon population has `Nₑ = 1000`.
+The lengths were also intentially extended 10%.
+
+It is assummed here that the wild salmon population has `Nₑ = 1000`.
 After `15` generations of selection, now `Nₑ≈ 200`.
 Please refer the source codes on how the parameters were calculated.
 
@@ -131,6 +133,7 @@ function sim_salmon_seq(macs, dir; nid = 4000)
            45305548,
            41468476,
            43051128]
+    #lns = Int.(floor.(lns .* 1.1))
     μ  = 1e-8           # mutation rate
     r  = 1e-8           # recombination rate
     n₀ = 1000           # Ne of wild population
@@ -148,9 +151,8 @@ function sim_salmon_seq(macs, dir; nid = 4000)
     isdir(dir) || mkpath(dir)
     wdir = mktempdir(dir)
     
-    Threads.@threads for nbp in lns
-        # cmd = `$macs $(2nid) $nbp -t $θ -r $ρ -eN $t1 $s1 -eN $t2 $s2 -eN $t3 $s3`
-        cmd = `$macs $(2nid) $nbp -t $θ -r $ρ -eN 0.25 5.0 -eN 2.50 15.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0`
+    Threads.@threads for chr in 1:length(lns)
+        cmd = `$macs $(2nid) $(lns[chr]) -t $θ -r $ρ -eN 0.25 5.0 -eN 2.50 15.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0`
         run(pipeline(cmd,
                      stderr = joinpath(wdir, "info.$chr"),
                      stdout = joinpath(wdir, "chr.$chr")))

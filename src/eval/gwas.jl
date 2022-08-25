@@ -50,11 +50,45 @@ Return `DataFrame(:pos, :ts)` on reverse order of `:ts`.
 """
 function find_peaks(ts)
     pks = DataFrame(pos = Int[], ts = Float64[])
-    p = 0
+    p = -1e6
     for i in eachindex(ts)
         p > ts[i] && push!(pks, (i - 1, p))
         p = ts[i]
     end
 
     sort!(pks, :ts, rev=true)
+end
+
+"""
+    function random_scan(fgt, pht, h²; mlc = 10_000)
+Given a file `fgt` containing the gentoypes of `nloc × nid`, phenotypes `pht`, and `h²`
+this function random group the genome of approximate `mlc` each.
+Each group is scanned and with emmax and Bayesian factor test statistics returned in a DataFrame.
+Results returned are sorted along the genome.
+"""
+function random_scan(fgt, pht, h²; mlc = 10_000)
+    vp = var(pht)
+    va = vp * h²
+    nlc, nid = Fio.readmdm(fgt)
+    gt = Mmap.mmap(fgt, Matrix{Int8}, (nlc, nid), 24)
+
+    start, stime = 1, now()
+    stops = collect(mlc:mlc:nlc)
+    nlc % mlc ≠ 0 && push!(stops, nlc)
+    rst = DataFrame(ord = Int[], emmax = Float64[], bf = Float64[])
+    loci = randperm(nlc)
+    for stop in stops
+        blk = sort(loci[start:stop])
+        gbk = zeros(Int8, length(blk), nid) # A genome block
+        copyto!(gbk, view(gt, blk, :))
+        f, a, lhs = rrblup_mme(ones(nid), gbk, pht, h²)
+        LAPACK.potri!('L', lhs)
+        c1, c2 = gwas(lhs, a, va, window = 1)
+        append!(rst, DataFrame(ord = blk, emmax = c1, bf = c2))
+        start = stop + 1
+        elapse = canonicalize(now() - stime)
+        @info "Locus $stop of $nlc" elapse
+    end
+    sort!(rst, :ord)
+    rst
 end
