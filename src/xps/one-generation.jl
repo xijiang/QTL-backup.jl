@@ -61,7 +61,8 @@ function generation_one_gwas(;
                              h²    = .8,
                              dir   = "dat",
                              qtls = [500, 1_000, 2_000],
-                             dsts = [Normal(), Laplace(), Gamma()])
+                             dsts = [Normal(), Laplace(), Gamma()],
+                             clear = true)
     macs = Sim.make_macs(tdir = dir)
     # Description
     title = "A simulation with 2 generations"
@@ -102,6 +103,11 @@ function generation_one_gwas(;
                 bar = create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
                 qtl, pht, nlc = _qtl_pht_nlc(dir, bar, nqtl, h², d)
                 _is_blk_size_matter(nlc, dir, bar, pht, h²)
+                if clear
+                    for file in "$dir/$bar" .* ["-f0.bin", "-f1.bin", "-hap.bin", "-map.ser"]
+                        rm(file)
+                    end
+                end
             end
         end
     end
@@ -147,8 +153,5 @@ function _scan_n_eval(dir, bar, nlc, bs, pht, h²)
             print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
         end
         println(io)
-    end
-    for file in "$dir/$bar" .* ["-f0.bin", "-f1.bin", "-hap.bin", "-map.ser"]
-        rm(file)
     end
 end
