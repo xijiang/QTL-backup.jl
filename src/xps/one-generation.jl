@@ -99,9 +99,11 @@ function generation_one_gwas(;
         dstr = _str_dist(d)
         for nqtl in qtls
             for r in 1:nrpt
-                tprintln("$dstr, nQTL=$nqtl, repeat=$r; elapse =", canonicalize(now() - stime))
+                tprintln("- $dstr, nQTL=$nqtl, repeat=$r; elapse =", canonicalize(now() - stime))
                 bar = create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
+                tprintln("  - QTL, phenotypes for F1")
                 qtl, pht, nlc = _qtl_pht_nlc(dir, bar, nqtl, h², d)
+                tprintln("  - Random scan with different block sizes")
                 _is_blk_size_matter(nlc, dir, bar, pht, h²)
                 if clear
                     for file in "$dir/$bar" .* ["-f0.bin", "-f1.bin", "-hap.bin", "-map.ser"]
@@ -113,10 +115,12 @@ function generation_one_gwas(;
     end
 end
 
-function _is_blk_size_matter(nlc, dir, bar, pht, h²)
-    for bs in [5_000, 10_000, 20_000, 30_000, 50_000]
+function _is_blk_size_matter(nlc, dir, bar, pht, h²;
+                             blks=[5_000, 10_000, 20_000, 30_000, 50_000])
+    for bs in blks
+        tprint(' ', bs)                     
         mlc = Aux.blksz(nlc, bs)
-        rst = Bv.rand_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
+        rst = Bv.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
         pka = Bv.find_peaks(rst.emmax)
         pkb = Bv.find_peaks(rst.bf)
         open("$dir/result.txt", "a") do io
@@ -134,6 +138,7 @@ function _is_blk_size_matter(nlc, dir, bar, pht, h²)
             println(io)
         end
     end
+    println()
 end
 
 function _scan_n_eval(dir, bar, nlc, bs, pht, h²)
