@@ -120,18 +120,19 @@ function _is_blk_size_matter(nlc, dir, bar, pht, h²)
         pka = Bv.find_peaks(rst.emmax)
         pkb = Bv.find_peaks(rst.bf)
         open("$dir/result.txt", "a") do io
-        print(io,
-              lpad(dstr, 8),
-              lpad(nqtl, 5),
-              lpad(r, 4),
-              lpad(bs, 6))
-        for w in [10, 20, 50]
-            print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
+            print(io,
+                  lpad(dstr, 8),
+                  lpad(nqtl, 5),
+                  lpad(r, 4),
+                  lpad(bs, 6))
+            for w in [10, 20, 50]
+                print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
+            end
+            for w in [10, 20, 50]
+                print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
+            end
+            println(io)
         end
-        for w in [10, 20, 50]
-            print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
-        end
-        println(io)
     end
 end
 
