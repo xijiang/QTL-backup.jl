@@ -24,20 +24,22 @@ function create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
     bar
 end
 
-function _bv_pht_bs(dir, bar, nqtl, h², d, mlc)
+function _qtl_pht_nlc(dir, bar, nqtl, h², d)
     g0 = Fio.readmat("$dir/$bar-f0.bin")
     g1 = Fio.readmat("$dir/$bar-f1.bin")
     qtl = Sim.simQTL(g0, nqtl, d=d)[1]
     bv = Sim.breeding_value(g1, qtl)
     pht = Sim.phenotype(bv, h²)
-    bs = Aux.blksz(size(g1)[1], mlc)
-    qtl, pht, bs
+    qtl, pht, size(g0)[1]
 end
 
 function _str_dist(d)
     str = string(d)
-    f = findfirst('.', str) + 1
+    a = findfirst('(', str) - 1
     t = findfirst('{', str) - 1
+    t = (t < a) ? t : a
+    f = findfirst('.', str) + 1
+    f = f < t ? f : 1
     str[f:t]
 end
 
@@ -57,15 +59,34 @@ function generation_one_gwas(;
                              nsib  = 25,
                              nrpt  = 10,
                              h²    = .8,
-                             dir   = "dat")
+                             dir   = "dat",
+                             qtls = [500, 1_000, 2_000],
+                             dsts = [Normal(), Laplace(), Gamma()])
     macs = Sim.make_macs(tdir = dir)
+    # Description
+    title = "A simulation with 2 generations"
+    subtitle = "Debugging"
+    desc = "{bold green}Summary of the simulation{/bold green}\n" *
+        "-------------------------\n" *
+        "This is a simulation with $nsire sires, " *
+        "$ndam dams, each dam has $nsib sibs.  " *
+        "The heritability of the trait is $h².  " *
+        "Scenarios for QTL numbers are $qtls, with $dsts.\n\n" *
+        "The founder population is from $macs. " *
+        "Then the genotypes are dropped into F1.  " *
+        "The simulation will repeat $nrpt times.  " *
+        "All are working in director $dir.\n\n" *
+        "Results are in $dir/result.txt"
+    println(Aux.xpsmsg(desc, title, subtitle))
+    Aux.separator(2)
+    
     stime = now()
     open("$dir/result.txt", "w") do io
-        println(io,
+        println(io,             # result file header
                 lpad("Distribn", 8),
                 lpad("nQTL", 5),
-                lpad("blksz", 6),
                 lpad("rpt", 4),
+                lpad("blksz", 6),
                 lpad("e10", 4),
                 lpad("e20", 4),
                 lpad("e50", 4),
@@ -73,38 +94,61 @@ function generation_one_gwas(;
                 lpad("b20", 4),
                 lpad("b50", 4))
     end
-    for d in [Normal(), Laplace(), Gamma()]
-        for nqtl in [500, 1_000, 2_000]
-            for bs in [10_000, 30_000, 50_000] # random block size
-                for r in 1:3
-                    println("\n\n")
-                    elapse = canonicalize(now() - stime)
-                    dstr = _str_dist(d)
-                    @info "Running $dstr nqtl=$nqtl blocksize≈$bs repeat=$r, ELAPSE = $elapse"
-                    bar = create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
-                    qtl, pht, mlc = _bv_pht_bs(dir, bar, nqtl, h², d, bs)
-                    rst = Bv.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
-                    pka = Bv.find_peaks(rst.emmax)
-                    pkb = Bv.find_peaks(rst.bf)
-                    open("$dir/result.txt", "a") do io
-                        print(io,
-                              lpad(dstr, 8),
-                              lpad(nqtl, 5),
-                              lpad(bs, 6),
-                              lpad(r, 4))
-                        for w in [10, 20, 50]
-                            print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
-                        end
-                        for w in [10, 20, 50]
-                            print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
-                        end
-                        println(io)
-                    end
-                    for file in "$dir/$bar" .* ["-f0.bin", "-f1.bin", "-hap.bin", "-map.ser"]
-                        rm(file)
-                    end
-                end
+    for d in dsts
+        dstr = _str_dist(d)
+        for nqtl in qtls
+            for r in 1:nrpt
+                tprintln("$dstr, nQTL=$nqtl, repeat=$r; elapse =", canonicalize(now() - stime))
+                bar = create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
+                qtl, pht, nlc = _qtl_pht_nlc(dir, bar, nqtl, h², d)
+                _is_blk_size_matter(nlc, dir, bar, pht, h²)
             end
         end
+    end
+end
+
+function _is_blk_size_matter(nlc, dir, bar, pht, h²)
+    for bs in [5_000, 10_000, 20_000, 30_000, 50_000]
+        mlc = Aux.blksz(nlc, bs)
+        rst = Bv.rand_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
+        pka = Bv.find_peaks(rst.emmax)
+        pkb = Bv.find_peaks(rst.bf)
+        open("$dir/result.txt", "a") do io
+        print(io,
+              lpad(dstr, 8),
+              lpad(nqtl, 5),
+              lpad(r, 4),
+              lpad(bs, 6))
+        for w in [10, 20, 50]
+            print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
+        end
+        for w in [10, 20, 50]
+            print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
+        end
+        println(io)
+    end
+end
+
+function _scan_n_eval(dir, bar, nlc, bs, pht, h²)
+    mlc = Aux.blksz(nlc, bs)
+    rst = Bv.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
+    pka = Bv.find_peaks(rst.emmax)
+    pkb = Bv.find_peaks(rst.bf)
+    open("$dir/result.txt", "a") do io
+        print(io,
+              lpad(dstr, 8),
+              lpad(nqtl, 5),
+              lpad(r, 4),
+              lpad(bs, 6))
+        for w in [10, 20, 50]
+            print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
+        end
+        for w in [10, 20, 50]
+            print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
+        end
+        println(io)
+    end
+    for file in "$dir/$bar" .* ["-f0.bin", "-f1.bin", "-hap.bin", "-map.ser"]
+        rm(file)
     end
 end

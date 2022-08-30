@@ -2,7 +2,7 @@
 
 module Sim
 using Distributions, Random, Statistics, Octavian, LinearAlgebra, DataFrames
-using Serialization
+using Serialization, Term
 
 include("quick-simu.jl")
 include("sim-qtl.jl")

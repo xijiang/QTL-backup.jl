@@ -24,7 +24,7 @@ Clone `MaCS` into a temp dir under `tdir` and compile it into `tdir`.
 """
 function make_macs(; tdir=pwd())
     macs = joinpath(abspath(tdir), "macs")
-    @info "Making macs"
+    @debug "Making macs"
     isfile(macs) && return macs
     isdir(tdir) || mkpath(tdir)
     wdir = mktempdir(tdir)
@@ -150,7 +150,8 @@ function sim_salmon_seq(macs, dir; nid = 4000)
     # s4 = 4n₁ / n₀               # 0.2n₀ in the breeding pool
     isdir(dir) || mkpath(dir)
     wdir = mktempdir(dir)
-    
+
+    tprintln("  - Simulate founder salmon data in parallele")
     Threads.@threads for chr in 1:length(lns)
         cmd = `$macs $(2nid) $(lns[chr]) -t $θ -r $ρ -eN 0.25 5.0 -eN 2.50 15.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0`
         run(pipeline(cmd,
@@ -178,6 +179,8 @@ and serialized to `map.ser` in the parent dir of `raw` also.
 Note, elsewhere I use `nlc×nid`, or `nhap×nid` dimensions.
 """
 function macs_2_hap(raw)
+    bar =  randstring(5)  # barcode of this simulation
+    tprintln("  - Collect founder data $bar from macs of chromosome: ")
     isdir(raw) || error("$raw not exists")
     raw[end] == '/' && (raw = raw[1:end-1])
     chrs = Int8[]
@@ -186,7 +189,6 @@ function macs_2_hap(raw)
     end
     sort!(chrs)           # chromosome number in integer, and in order
     parent = dirname(raw) # path
-    bar =  randstring(5)  # barcode of this simulation
     fgt = joinpath(parent, "$bar-hap.bin")
     tmap = DataFrame(chr = Int8[], pos = Int64[], frq = Float64[])
     open(fgt, "w") do io
@@ -194,7 +196,7 @@ function macs_2_hap(raw)
         nlc, as = 0, nothing # to count nID. `as` is for alleles
         for ic in chrs
             this_chr = joinpath(raw, "chr.$ic")
-            @info "Dealing with $this_chr"
+            tprint(' ', ic)
             nbp = parse(Float64, split(readline(this_chr))[4])
             for line in eachline(this_chr)
                 line[1:4] ≠ "SITE" && continue
@@ -211,6 +213,7 @@ function macs_2_hap(raw)
         seekstart(io)
         write(io, [nhp, nlc])
     end
+    println()
     serialize(joinpath(parent, "$bar-map.ser"), tmap)
     return bar
 end
