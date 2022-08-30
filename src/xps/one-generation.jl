@@ -104,7 +104,7 @@ function generation_one_gwas(;
                 tprintln("  - QTL, phenotypes for F1")
                 qtl, pht, nlc = _qtl_pht_nlc(dir, bar, nqtl, h², d)
                 tprintln("  - Random scan with different block sizes")
-                _is_blk_size_matter(nlc, dir, bar, pht, h²)
+                _is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl)
                 if clear
                     for file in "$dir/$bar" .* ["-f0.bin", "-f1.bin", "-hap.bin", "-map.ser"]
                         rm(file)
@@ -115,7 +115,7 @@ function generation_one_gwas(;
     end
 end
 
-function _is_blk_size_matter(nlc, dir, bar, pht, h²;
+function _is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl;
                              blks=[5_000, 10_000, 20_000, 30_000, 50_000])
     for bs in blks
         tprint(' ', bs)                     
