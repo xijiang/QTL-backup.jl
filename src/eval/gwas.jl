@@ -77,8 +77,9 @@ function random_scan(fgt, pht, h²; mlc = 10_000)
     nlc % mlc ≠ 0 && push!(stops, nlc)
     rst = DataFrame(ord = Int[], emmax = Float64[], bf = Float64[])
     loci = randperm(nlc)
+    println()
     tprintln(lpad("Total $nlc SNP", 75))
-    i = 1
+    cent = nlc ÷ 10
     for stop in stops
         blk = sort(loci[start:stop])
         gbk = zeros(Int8, length(blk), nid) # A genome block
@@ -88,11 +89,10 @@ function random_scan(fgt, pht, h²; mlc = 10_000)
         c1, c2 = gwas(lhs, a, va, window = 1)
         append!(rst, DataFrame(ord = blk, emmax = c1, bf = c2))
         start = stop + 1
-        tprint(" $stop")
-        i += 1
-        if i % 10 == 0
+        if stop ≥ cent
             elapse = canonicalize(now() - stime)
-            println("\nElapsed time: ", elapse)
+            tprintln("$stop of $nlc, elapsed time: ", elapse)
+            cent += nlc ÷ 10
         end
     end
     sort!(rst, :ord)

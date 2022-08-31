@@ -52,12 +52,15 @@ end
                         h²    = .8,
                         dir   = "dat")
 Simulate one genration data for GWAS scan investigations.
+
+This function has several parts.
+One can uncomment one of the parts to do the investigation.
 """
 function generation_one_gwas(;
                              nsire = 100,
                              ndam  = 200,
                              nsib  = 25,
-                             nrpt  = 10,
+                             nrpt  = 5,
                              h²    = .8,
                              dir   = "dat",
                              qtls = [500, 1_000, 2_000],
@@ -104,7 +107,16 @@ function generation_one_gwas(;
                 tprintln("  - QTL, phenotypes for F1")
                 qtl, pht, nlc = _qtl_pht_nlc(dir, bar, nqtl, h², d)
                 tprintln("  - Random scan with different block sizes")
+
+                # ========== Test one ==========
+                # below is to test whether to have different block size for random_scan
+                # to use it, uncomment it, and call
+                # QTL.Xps.generation_one_gwas()
                 _is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl)
+
+                # ========== Test two ==========
+                # below block is to test which 10 peaks to use
+                # QTL.Xps.generation_one_gwas(clear=false)
                 if clear
                     for file in "$dir/$bar" .* ["-f0.bin", "-f1.bin", "-hap.bin", "-map.ser"]
                         rm(file)
@@ -115,10 +127,14 @@ function generation_one_gwas(;
     end
 end
 
+"""
+This function is to test if the random scan should also investigate
+different block size.
+"""
 function _is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl;
-                             blks=[5_000, 10_000, 20_000, 30_000, 50_000])
+                             blks=[5_000, 10_000, 15_000, 20_000, 25_000, 30_000])
     for bs in blks
-        tprint(' ', bs)                     
+        tprintln(lpad("Block size $bs", 60))                     
         mlc = Aux.blksz(nlc, bs)
         rst = Bv.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
         pka = Bv.find_peaks(rst.emmax)
@@ -139,6 +155,13 @@ function _is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl;
         end
     end
     println()
+end
+
+"""
+This function is to investigate if there is a better measure
+to choose the top peaks.
+"""
+function _check_peaks()
 end
 
 function _scan_n_eval(dir, bar, nlc, bs, pht, h²)
