@@ -73,7 +73,7 @@ function _cd1f_qtl_pht_nlc(dir, bar, nqtl, h², d)
     qtl, pht, size(g0)[1]
 end
 
-function _str_dist(d)
+function _cd1f_str_dist(d)
     str = string(d)
     a = findfirst('(', str) - 1
     t = findfirst('{', str) - 1
@@ -113,14 +113,14 @@ function generation_one_gwas(;
     _cd1f_one_generation_msg(nsire, ndam, nsib, h², qtls, dsts, macs, nrpt, dir, out)
     _cd1f_write_sim_g1_rst_title(dir, out)
     for d in dsts
-        dstr = _str_dist(d)
+        dstr = _cd1f_str_dist(d)
         # ========== Test two ==========
         # below block is to test which 10 peaks to use. Call
         #     QTL.Xps.generation_one_gwas(test_pks=true)
         # This only test with nqtl = 1500, and random block size 18000
         if test_pks
             tprintln("- $dstr, nQTL=1500, elapse=", canonicalize(now() - stime))
-            bar = create_a_base_andf1(macs, dir, nsire, ndam, nsib)
+            bar = create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
             nqtl, bs = 1500, 18_000
             qtl, pht, nlc = _cd1f_qtl_pht_nlc(dir, bar, nqtl, h², d)
             serialize("$dir/$bar-qtl.ser", qtl)
