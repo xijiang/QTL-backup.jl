@@ -180,7 +180,7 @@ Note, elsewhere I use `nlc×nid`, or `nhap×nid` dimensions.
 """
 function macs_2_hap(raw)
     bar =  randstring(5)  # barcode of this simulation
-    tprintln("  - Collect founder data {cyan}$bar{cyan} from macs of chromosome: ")
+    tprintln("  - Collect founder data {cyan}$bar{/cyan} from macs of chromosome: ")
     isdir(raw) || error("$raw not exists")
     raw[end] == '/' && (raw = raw[1:end-1])
     chrs = Int8[]

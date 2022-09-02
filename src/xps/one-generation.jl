@@ -1,4 +1,44 @@
 # SPDX-License-Identifier: MIT
+# I use the first 4 characters of the task name hash (md5sum) as the
+# initials of temporary function names. Here,
+# echo One generation GWAS | md5sum → cd1f
+# a temporary function comes and goes. 
+function _cd1f_one_generation_msg(
+    nsire, ndam, nsib, h², qtls, dsts, macs, nrpt, dir, out;
+    title = "A simulation with 2 generations",
+    subtitle = "Debugging"
+    )
+    # Description
+    desc = "{bold green}Summary of the simulation{/bold green}\n" *
+        "-------------------------\n" *
+        "This is a simulation with $nsire sires, " *
+        "$ndam dams, each dam has $nsib sibs.  " *
+        "The heritability of the trait is $h².  " *
+        "Scenarios for QTL numbers are $qtls, with $dsts.\n\n" *
+        "The founder population is from $macs. " *
+        "Then the genotypes are dropped into F1.  " *
+        "The simulation will repeat $nrpt times.  " *
+        "All are working in director $dir.\n\n" *
+        "Results are in {cyan}$dir/result.txt{/cyan}"
+    println(Aux.xpsmsg(desc, title, subtitle))
+    Aux.separator(2)
+end
+
+function _cd1f_write_sim_g1_rst_title(dir, out)
+    open("$dir/$out", "w") do io
+        println(io,             # result file header
+                lpad("Distribn", 8),
+                lpad("nQTL", 5),
+                lpad("rpt", 4),
+                lpad("blksz", 6),
+                lpad("e10", 4),
+                lpad("e20", 4),
+                lpad("e50", 4),
+                lpad("b10", 4),
+                lpad("b20", 4),
+                lpad("b50", 4))
+    end
+end
 
 function create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
     # common base population
@@ -24,7 +64,7 @@ function create_a_base_and_f1(macs, dir, nsire, ndam, nsib)
     bar
 end
 
-function _qtl_pht_nlc(dir, bar, nqtl, h², d)
+function _cd1f_qtl_pht_nlc(dir, bar, nqtl, h², d)
     g0 = Fio.readmat("$dir/$bar-f0.bin")
     g1 = Fio.readmat("$dir/$bar-f1.bin")
     qtl = Sim.simQTL(g0, nqtl, d=d)[1]
@@ -65,41 +105,29 @@ function generation_one_gwas(;
                              dir   = "dat",
                              qtls = [500, 1_000, 2_000],
                              dsts = [Normal(), Laplace(), Gamma()],
-                             clear = true)
+                             out = "result.txt",
+                             test_pks = false,
+                             test_blk = false)
+    stime = now()               # simulation starts here
     macs = Sim.make_macs(tdir = dir)
-    # Description
-    title = "A simulation with 2 generations"
-    subtitle = "Debugging"
-    desc = "{bold green}Summary of the simulation{/bold green}\n" *
-        "-------------------------\n" *
-        "This is a simulation with $nsire sires, " *
-        "$ndam dams, each dam has $nsib sibs.  " *
-        "The heritability of the trait is $h².  " *
-        "Scenarios for QTL numbers are $qtls, with $dsts.\n\n" *
-        "The founder population is from $macs. " *
-        "Then the genotypes are dropped into F1.  " *
-        "The simulation will repeat $nrpt times.  " *
-        "All are working in director $dir.\n\n" *
-        "Results are in $dir/result.txt"
-    println(Aux.xpsmsg(desc, title, subtitle))
-    Aux.separator(2)
-    
-    stime = now()
-    open("$dir/result.txt", "w") do io
-        println(io,             # result file header
-                lpad("Distribn", 8),
-                lpad("nQTL", 5),
-                lpad("rpt", 4),
-                lpad("blksz", 6),
-                lpad("e10", 4),
-                lpad("e20", 4),
-                lpad("e50", 4),
-                lpad("b10", 4),
-                lpad("b20", 4),
-                lpad("b50", 4))
-    end
+    _cd1f_one_generation_msg(nsire, ndam, nsib, h², qtls, dsts, macs, nrpt, dir, out)
+    _cd1f_write_sim_g1_rst_title(dir, out)
     for d in dsts
         dstr = _str_dist(d)
+        # ========== Test two ==========
+        # below block is to test which 10 peaks to use. Call
+        #     QTL.Xps.generation_one_gwas(test_pks=true)
+        # This only test with nqtl = 1500, and random block size 18000
+        if test_pks
+            tprintln("- $dstr, nQTL=1500, elapse=", canonicalize(now() - stime))
+            bar = create_a_base_andf1(macs, dir, nsire, ndam, nsib)
+            nqtl, bs = 1500, 18_000
+            qtl, pht, nlc = _cd1f_qtl_pht_nlc(dir, bar, nqtl, h², d)
+            serialize("$dir/$bar-qtl.ser", qtl)
+            tprintln("  - Random scan with block size $bs")
+            _cd1f_scan_n_eval(dir, bar, nlc, pht, h², dstr, qtl, 1, out, save_pks=true)
+            continue
+        end
         for nqtl in qtls
             for r in 1:nrpt
                 tprintln("- $dstr, nQTL=$nqtl, repeat=$r; elapse =", canonicalize(now() - stime))
@@ -107,20 +135,18 @@ function generation_one_gwas(;
                 tprintln("  - QTL, phenotypes for F1")
                 qtl, pht, nlc = _qtl_pht_nlc(dir, bar, nqtl, h², d)
                 tprintln("  - Random scan with different block sizes")
-
-                # ========== Test one ==========
-                # below is to test whether to have different block size for random_scan
-                # to use it, uncomment it, and call
-                # QTL.Xps.generation_one_gwas()
-                _is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl)
-
-                # ========== Test two ==========
-                # below block is to test which 10 peaks to use
-                # QTL.Xps.generation_one_gwas(clear=false)
-                if clear
-                    for file in "$dir/$bar" .* ["-f0.bin", "-f1.bin", "-hap.bin", "-map.ser"]
-                        rm(file)
-                    end
+                if test_blk
+                    # ========== Test one >>>>>>>>>>
+                    # below is to test whether to have different block size for random_scan
+                    # to use it, uncomment the last code line of this block, and call
+                    # QTL.Xps.generation_one_gwas(test_blk)
+                    _cd1f_is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl)
+                    # <<<<<<<<<< Test one ==========
+                else
+                    _cd1f_scan_n_eval(dir, bar, nlc, pht, h², dstr, qtl, r, out)
+                end
+                for file in "$dir/$bar" .* ["-f0.bin", "-f1.bin", "-hap.bin", "-map.ser"]
+                    rm(file)
                 end
             end
         end
@@ -131,7 +157,7 @@ end
 This function is to test if the random scan should also investigate
 different block size.
 """
-function _is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl;
+function _cd1f_is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl, out;
                              blks=[5_000, 10_000, 15_000, 20_000, 25_000, 30_000])
     for bs in blks
         tprintln(lpad("Block size $bs", 60))                     
@@ -139,7 +165,7 @@ function _is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl;
         rst = Bv.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
         pka = Bv.find_peaks(rst.emmax)
         pkb = Bv.find_peaks(rst.bf)
-        open("$dir/result.txt", "a") do io
+        open("$dir/$out", "a") do io
             print(io,
                   lpad(dstr, 8),
                   lpad(nqtl, 5),
@@ -157,22 +183,20 @@ function _is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl;
     println()
 end
 
-"""
-This function is to investigate if there is a better measure
-to choose the top peaks.
-"""
-function _check_peaks()
-end
-
-function _scan_n_eval(dir, bar, nlc, bs, pht, h²)
+function _cd1f_scan_n_eval(dir, bar, nlc, pht, h², dstr, qtl, r, out;
+                           save_pks=false,
+                           bs = 18_000)
     mlc = Aux.blksz(nlc, bs)
     rst = Bv.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
     pka = Bv.find_peaks(rst.emmax)
     pkb = Bv.find_peaks(rst.bf)
-    open("$dir/result.txt", "a") do io
+    if save_pks
+        serialize("$dir/$bar-pks.ser", (pka, pkb))
+    end
+    open("$dir/$out", "a") do io
         print(io,
               lpad(dstr, 8),
-              lpad(nqtl, 5),
+              lpad(length(qtl.locus), 5),
               lpad(r, 4),
               lpad(bs, 6))
         for w in [10, 20, 50]

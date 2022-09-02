@@ -70,6 +70,7 @@ function random_scan(fgt, pht, h²; mlc = 10_000)
     vp = var(pht)
     va = vp * h²
     nlc, nid = Fio.readmdm(fgt)
+    w = length(string(nlc)) + 28
     gt = Mmap.mmap(fgt, Matrix{Int8}, (nlc, nid), 24)
 
     start, stime = 1, now()
@@ -91,7 +92,7 @@ function random_scan(fgt, pht, h²; mlc = 10_000)
         start = stop + 1
         if stop ≥ cent
             elapse = canonicalize(now() - stime)
-            tprintln("$stop of $nlc, elapsed time: ", elapse)
+            tprintln(lpad("$stop SNP tested,  elapsed time:", w), elapse)
             cent += nlc ÷ 10
         end
     end
