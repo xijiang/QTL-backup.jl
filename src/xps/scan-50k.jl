@@ -62,6 +62,7 @@ function eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r, dstr)
     open(rst, "a") do io
         print(io,
               lpad(r, 6),
+              lpad(h², 5),
               lpad(nqtl, 5),
               lpad(dstr, 13))
         for w in [10, 20, 50]
@@ -88,8 +89,7 @@ function scan_50k(dir;
                   nsire = 25,
                   ndam = 500,
                   nsib = 20,
-                  h² = .8,
-                  nrpt = 10,
+                  nrpt = 5,
                   )
     rst = joinpath(dir, "eeb8.txt") # result file
 
@@ -101,8 +101,8 @@ function scan_50k(dir;
         "-------------------------\n" *
         "This is a simulation with $nsire sires, " *
         "$ndam dams, each dam has $nsib sibs.  " *
-        "The heritability of the trait is $h².  " *
-        "1000 QTL are simulated, with " *
+        "The heritability of the trait is [0.05, 0.3, 0.6].  " *
+        "500 or 1000 QTL are simulated, with " *
         "{cyan}Normal{/cyan}, {cyan}Gamma{/cyan}, and {cyan}Laplace{/cyan} distributions\n\n" *
         "The founder population is from {cyan}macs{/cyan}. " *
         "Then the genotypes are dropped into F1.  " *
@@ -123,19 +123,21 @@ function scan_50k(dir;
 
     ##########
     open(rst, "w") do io
-        println(io, "repeat nqtl distribution e10 e20 e50 b10 b20 b50")
+        println(io, "repeat   h² nqtl distribution e10 e20 e50 b10 b20 b50")
     end
     for r in 1:nrpt
         g0, g1, smp = eeb8_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib)
         tprintln("  - Repeat $r")
-        for nqtl in [500, 1000]
-            tprintln("    - No. of QTL: $nqtl")
-            for d in [Normal(), Laplace(), Gamma()]
-                dstr = _cd1f_str_dist(d)
-                tprintln("      - Distribution: $dstr")
-                eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r, dstr)
-                for file in bar .* ["-hap.bin", ".chr", ".info"]
-                    rm(joinpath(dir, file))
+        for h² in [0.05, 0.3, 0.6]
+            for nqtl in [500, 1000]
+                tprintln("    - No. of QTL: $nqtl")
+                for d in [Normal(), Laplace(), Gamma()]
+                    dstr = _cd1f_str_dist(d)
+                    tprintln("      - Distribution: $dstr")
+                    eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r, dstr)
+                    for file in bar .* ["-hap.bin", ".chr", ".info"]
+                        rm(joinpath(dir, file))
+                    end
                 end
             end
         end
