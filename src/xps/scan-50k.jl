@@ -43,7 +43,7 @@ function eeb8_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib)
         m[:, loci]
     end
     smp = tmap[loci, :]
-    a1 = zeros(Int8, nlc, ndam * nsib * 2) # → nlc × nhap
+    a1 = zeros(Int8, 50_000, ndam * nsib * 2) # → nlc × nhap
     lms = Sim.summap(smp)
     pms = begin
         tmp = Sim.random_mate(nsire, ndam)
@@ -53,7 +53,7 @@ function eeb8_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib)
     Mat.hap2gt(a0'), Mat.hap2gt(a1), smp
 end
 
-function eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r)
+function eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r, dstr)
     qtl = Sim.simQTL(g0, nqtl, d=d)[1]
     bv  = Sim.breeding_value(g1, qtl)
     pht = Sim.phenotype(bv, h²)
@@ -61,7 +61,7 @@ function eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r)
     va  = vp * h²
     nid = size(g1)[2]
     _, a, lhs = Bv.rrblup_mme(ones(nid), g1, pht, h²)
-    LAPACK.porti!('L', lhs)
+    LAPACK.potri!('L', lhs)
     emmax, bf = gwas(lhs, a, va, window = 1)
     pka = Bv.find_peaks(emmax)
     pkb = Bv.find_peaks(bf)
@@ -69,7 +69,7 @@ function eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r)
         print(io,
               lpad(r, 6),
               lpad(nqtl, 5),
-              lpad(_cd1f_str_dist(d), 13))
+              lpad(dstr, 13))
         for w in [10, 20, 50]
             print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
         end
@@ -137,8 +137,9 @@ function scan_50k(dir;
         for nqtl in [500, 1000]
             tprintln("    - No. of QTL: $nqtl")
             for d in [Normal(), Laplace(), Gamma()]
-                tprintln("      - Distribution: string(d)")
-                eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r)
+                dstr = _cd1f_str_dist(d)
+                tprintln("      - Distribution: $dstr")
+                eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r, dstr)
             end
         end
     end

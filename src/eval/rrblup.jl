@@ -24,8 +24,8 @@ function rrblup_mme(x, z, y, h²; dd = 0, norm = false)
     nb = nf + nlc           # total number of factors (fixed + random)
 
     mem = Aux.memavail() * 99 ÷ 100 # not all available memory
-    mlh = nb^2 * 8                   # memory for LHS
-    mem < mlh && error("Not enough memory for this calculation")
+    mlh = nb^2 * 8                  # memory for LHS
+    mem < mlh && error("Not enough memory for this calculation: $(mem/1024^3)G < $(mlh/1024^3)G")
     
     # the left hand side
     lhs = zeros(nb, nb)
