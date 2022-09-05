@@ -26,16 +26,10 @@ function eeb8_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib)
         seekstart(io)
         write(io, [nhp, nlc])
     end
-    serialize(joinpath(dir, "$bar-map.ser"), tmap)
 
     ##########
     tprintln("  - Sampling 50k SNP, and create F_0, F_1")
     loci = sort(randperm(nlc)[1:50_000])
-    open(joinpath(dir, "$bar-50k.txt"), "w") do io
-        for locus in loci
-            println(io, locus)
-        end
-    end
 
     nid = nsire + ndam
     a0 = begin
@@ -62,7 +56,7 @@ function eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r, dstr)
     nid = size(g1)[2]
     _, a, lhs = Bv.rrblup_mme(ones(nid), g1, pht, h²)
     LAPACK.potri!('L', lhs)
-    emmax, bf = gwas(lhs, a, va, window = 1)
+    emmax, bf = Bv.gwas(lhs, a, va, window = 1)
     pka = Bv.find_peaks(emmax)
     pkb = Bv.find_peaks(bf)
     open(rst, "a") do io
@@ -91,9 +85,9 @@ The F1 are then scanned.
 TS are constructed to find peaks to cover true QTL.
 """
 function scan_50k(dir;
-                  nsire = 100,
-                  ndam = 200,
-                  nsib = 25,
+                  nsire = 25,
+                  ndam = 500,
+                  nsib = 20,
                   h² = .8,
                   nrpt = 10,
                   )
@@ -140,6 +134,9 @@ function scan_50k(dir;
                 dstr = _cd1f_str_dist(d)
                 tprintln("      - Distribution: $dstr")
                 eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r, dstr)
+                for file in bar .* ["-hap.bin", ".chr", ".info"]
+                    rm(joinpath(dir, file))
+                end
             end
         end
     end
