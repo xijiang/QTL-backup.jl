@@ -191,6 +191,7 @@ function _cd1f_scan_n_eval(dir, bar, nlc, pht, h², dstr, qtl, r, out;
     pka = Bv.find_peaks(rst.emmax)
     pkb = Bv.find_peaks(rst.bf)
     if save_pks
+        @info "writing peaks"
         serialize("$dir/$bar-pks.ser", (pka, pkb))
     end
     open("$dir/$out", "a") do io

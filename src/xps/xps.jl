@@ -7,7 +7,9 @@ gene editing studies.
 """
 module Xps
 using Distributions, Term, Dates, DataFrames, Serialization
+using Random, Mmap, LinearAlgebra
 using ..Fio, ..Mat, ..Sim, ..Bv, ..Aux
 
 include("one-generation.jl")
+include("scan-50k.jl")
 end
