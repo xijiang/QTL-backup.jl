@@ -11,5 +11,5 @@ using Random, Mmap, LinearAlgebra
 using ..Fio, ..Mat, ..Sim, ..Bv, ..Aux
 
 include("one-generation.jl")
-include("scan-50k.jl")
+include("simianer-wcgalp-2018.jl")
 end

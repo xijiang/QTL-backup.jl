@@ -1,13 +1,13 @@
-# This is a test for 'scan 50k' → eeb8.
-function eeb8_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib)
+# This is a test for 'Simianer WCGALP 2018' → _9c59.
+function _9c59_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib, tlc)
     ##########
-    tprintln("  - Simulating a chromosome")
+    tprintln("      - Simulating a chromosome")
     run(pipeline(cmd,
                  stderr = joinpath(dir, "$bar.info"),
                  stdout = joinpath(dir, "$bar.chr")))
 
     ##########
-    tprintln("  - Collection SNP haplotypes")
+    tprintln("      - Collection SNP haplotypes")
     nlc, as = 0, nothing
     tmap = DataFrame(chr = Int8[], pos = Int64[], frq = Float64[])
     open(joinpath(dir, "$bar-hap.bin"), "w") do io
@@ -28,8 +28,8 @@ function eeb8_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib)
     end
 
     ##########
-    tprintln("  - Sampling 50k SNP, and create F_0, F_1")
-    loci = sort(randperm(nlc)[1:50_000])
+    tprintln("      - Sampling $(tlc÷1000)k SNP, and create F_0, F_1")
+    loci = sort(randperm(nlc)[1:tlc])
 
     nid = nsire + ndam
     a0 = begin
@@ -37,7 +37,7 @@ function eeb8_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib)
         m[:, loci]
     end
     smp = tmap[loci, :]
-    a1 = zeros(Int8, 50_000, ndam * nsib * 2) # → nlc × nhap
+    a1 = zeros(Int8, tlc, ndam * nsib * 2) # → nlc × nhap
     lms = Sim.summap(smp)
     pms = begin
         tmp = Sim.random_mate(nsire, ndam)
@@ -47,24 +47,24 @@ function eeb8_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib)
     Mat.hap2gt(a0'), Mat.hap2gt(a1), smp
 end
 
-function eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r, dstr)
+function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
+    g1 = Fio.readmat(f1)
     qtl = Sim.simQTL(g0, nqtl, d=d)[1]
     bv  = Sim.breeding_value(g1, qtl)
     pht = Sim.phenotype(bv, h²)
     vp  = var(pht)
     va  = vp * h²
-    nid = size(g1)[2]
-    _, a, lhs = Bv.rrblup_mme(ones(nid), g1, pht, h²)
-    LAPACK.potri!('L', lhs)
-    emmax, bf = Bv.gwas(lhs, a, va, window = 1)
-    pka = Bv.find_peaks(emmax)
-    pkb = Bv.find_peaks(bf)
+    nlc, nid = size(g1)
+    nlc ÷= 1000
+    pks = Bv.random_scan(f1, pht, h², mlc=25_000)
+    pka = Bv.find_peaks(pks.emmax)
+    pkb = Bv.find_peaks(pks.bf)
     open(rst, "a") do io
         print(io,
               lpad(r, 6),
+              lpad("$(nlc)k", 5),
               lpad(h², 5),
-              lpad(nqtl, 5),
-              lpad(dstr, 13))
+              lpad(nqtl, 5))
         for w in [10, 20, 50]
             print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
         end
@@ -76,7 +76,7 @@ function eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r, dstr)
 end
 
 """
-    function scan_50k()
+    function simianer_scan()
 This function simulate a small genome with altogether 50k SNP.
 ALL QTL are also sampled from them.
 Strategy used in `one-generation` was also used here.
@@ -85,13 +85,13 @@ Simulation 100 male × 200 females, each family produce 30 sibs.
 The F1 are then scanned.
 TS are constructed to find peaks to cover true QTL.
 """
-function scan_50k(dir;
+function sinianer_scan(dir;
                   nsire = 25,
                   ndam = 500,
                   nsib = 20,
                   nrpt = 5,
                   )
-    rst = joinpath(dir, "eeb8.txt") # result file
+    rst = joinpath(dir, "9c59.txt") # result file
 
     ##########
     title = "A simulation with 2 generations and only 50k SNP"
@@ -102,8 +102,7 @@ function scan_50k(dir;
         "This is a simulation with $nsire sires, " *
         "$ndam dams, each dam has $nsib sibs.  " *
         "The heritability of the trait is [0.05, 0.3, 0.6].  " *
-        "500 or 1000 QTL are simulated, with " *
-        "{cyan}Normal{/cyan}, {cyan}Gamma{/cyan}, and {cyan}Laplace{/cyan} distributions\n\n" *
+        "500 or 1000 QTL are simulated, with normal distribution.\n\n" *
         "The founder population is from {cyan}macs{/cyan}. " *
         "Then the genotypes are dropped into F1.  " *
         "The simulation will repeat $nrpt times.  " *
@@ -123,22 +122,24 @@ function scan_50k(dir;
 
     ##########
     open(rst, "w") do io
-        println(io, "repeat   h² nqtl distribution e10 e20 e50 b10 b20 b50")
+        println(io, "repeat nmkr   h² nqtl e10 e20 e50 b10 b20 b50")
     end
+    d = Normal()
     for r in 1:nrpt
-        g0, g1, smp = eeb8_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib)
         tprintln("  - Repeat $r")
-        for h² in [0.05, 0.3, 0.6]
-            for nqtl in [500, 1000]
-                tprintln("    - No. of QTL: $nqtl")
-                for d in [Normal(), Laplace(), Gamma()]
-                    dstr = _cd1f_str_dist(d)
-                    tprintln("      - Distribution: $dstr")
-                    eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r, dstr)
+        for tlc in [50_000, 100_000, 150_000]
+            tprintln("    - Total markers: $tlc")
+            g0, g1, smp = _9c59_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib, tlc)
+            Fio.writemat(joinpath(dir, "$bar-f1.bin"), g1)
+            for h² in [0.05, 0.3, 0.6]
+                tprintln("        - h² = $h²")
+                for nqtl in [500, 1000]
+                    tprintln("        - No. of QTL: $nqtl")
+                    _9c59_sim_scan(g0, nqtl, d, joinpath(dir, "$bar-f1.bin"), h², rst, r)
                 end
             end
         end
-        for file in bar .* ["-hap.bin", ".chr", ".info"]
+        for file in bar .* ["-hap.bin", "-f1.bin", ".chr", ".info"]
             rm(joinpath(dir, file))
         end
     end
