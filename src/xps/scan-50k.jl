@@ -135,11 +135,11 @@ function scan_50k(dir;
                     dstr = _cd1f_str_dist(d)
                     tprintln("      - Distribution: $dstr")
                     eeb8_sim_scan(g0, nqtl, d, g1, h², rst, r, dstr)
-                    for file in bar .* ["-hap.bin", ".chr", ".info"]
-                        rm(joinpath(dir, file))
-                    end
                 end
             end
+        end
+        for file in bar .* ["-hap.bin", ".chr", ".info"]
+            rm(joinpath(dir, file))
         end
     end
 end
