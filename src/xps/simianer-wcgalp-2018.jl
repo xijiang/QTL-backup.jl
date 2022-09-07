@@ -85,7 +85,7 @@ Simulation 100 male × 200 females, each family produce 30 sibs.
 The F1 are then scanned.
 TS are constructed to find peaks to cover true QTL.
 """
-function sinianer_scan(dir;
+function simianer_scan(dir;
                   nsire = 25,
                   ndam = 500,
                   nsib = 20,
@@ -94,7 +94,7 @@ function sinianer_scan(dir;
     rst = joinpath(dir, "9c59.txt") # result file
 
     ##########
-    title = "A simulation with 2 generations and only 50k SNP"
+    title = "A simulation with 2 generations and only 50, 100, and 150k SNP"
     subtitle = "Debugging"
     # Description
     desc = "{bold green}Summary of the simulation{/bold green}\n" *

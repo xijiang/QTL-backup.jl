@@ -119,11 +119,15 @@ Linkage map summary `lms` is from `summap`.
 Note `g0` is of `nhap×nlc`, use `g0'` to feed this function.
 """
 function drop(pg, og, pm, lms)
-    dpm = [1:size(pm)[1] pm]
-    for (id, ip, im) in eachrow(dpm)
+    nf = size(pm)[1]
+    Threads.@threads for id in 1:nf
+        ip = pm[id, 1]
         pa = view(pg, :, 2ip-1:2ip)
-        zi = vec(view(og, :, 2id-1))
+        zi = vec(view(og, :, 2id - 1))
         gamete(pa, zi, lms)
+    end
+    Threads.@threads for id in 1:nf
+        im = pm[id, 2]
         ma = view(pg, :, 2im-1:2im)
         zi = vec(view(og, :, 2id))
         gamete(ma, zi, lms)
@@ -144,6 +148,18 @@ function reproduce(haps, ped, lms)
         gamete(pa, zi, lms)
         ma = view(haps, 2im-1:2im, :)
         zi = vec(view(haps, 2id, :))
+        gamete(ma, zi, lms)
+    end
+end
+
+function new_drop(pg, og, pm, lms)
+    dpm = [1:size(pm)[1] pm]
+    for (id, ip, im) in eachrow(dpm)
+        pa = view(pg, :, 2ip-1:2ip)
+        zi = vec(view(og, :, 2id-1))
+        gamete(pa, zi, lms)
+        ma = view(pg, :, 2im-1:2im)
+        zi = vec(view(og, :, 2id))
         gamete(ma, zi, lms)
     end
 end

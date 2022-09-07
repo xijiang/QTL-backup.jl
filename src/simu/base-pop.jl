@@ -217,3 +217,30 @@ function macs_2_hap(raw)
     serialize(joinpath(parent, "$bar-map.ser"), tmap)
     return bar
 end
+
+"""
+    function sim_one_chr(dir, nid, bar;
+                         θ = 4e-5,
+                         ρ = 4e-5,
+                         nbp = 1e8
+                         )
+This is a function aimed for quick testing.
+It use `macs` to simulate a chromosome.
+Its results are then written to `dir/bar-hap.bin`, and `dir/bar-map.ser`.
+Notes here that the haplotypes of `f0` are of `nlc × nhp`.
+"""
+function sim_one_chr(dir, nid, bar;
+                     θ = 4e-5,
+                     ρ = 4e-5,
+                     nbp = 1e8
+                     )
+    macs = make_macs(tdir = dir)
+    cmd = `$macs $(2nid) $nbp -t $θ -r $ρ -eN .25 5.0 -eN 2.50 15.0 -eN 25.0 60.0 -eN 250.0 120.0 -eN 2500.0 1000.0`
+    run(pipeline(cmd,
+                 stderr = joinpath(dir, "$bar.info"),
+                 stdout = joinpath(dir, "$bar.chr")))
+    gt, ps, fq = read_macs(joinpath(dir, "$bar.chr"))
+    nlc, nhp = size(gt)
+    Fio.writemat(joinpath(dir, "$bar-hap.bin"), gt)
+    serialize(joinpath(dir, "$bar-map.ser"), DataFrame(chr=ones(Int8, nlc), pos = ps, frq = fq))
+end
