@@ -62,7 +62,7 @@ function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
     nlc ÷= 1000
     tss = Bv.random_scan(f1, pht, h², mlc=25_000) # test statistics
     pka = Bv.find_peaks(tss.emmax)
-    pkb = bv.find_peaks(tss.bf)
+    pkb = Bv.find_peaks(tss.bf)
     pkc = sort(tss, :emmax)
     open(rst, "a") do io
         print(io,
