@@ -47,6 +47,10 @@ function _9c59_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib, tlc)
     Mat.hap2gt(a0'), Mat.hap2gt(a1), smp
 end
 
+"""
+Emmax, and Bayesian factor(bf) have totally same results.
+I ignored the latter here.
+"""
 function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
     g1 = Fio.readmat(f1)
     qtl = Sim.simQTL(g0, nqtl, d=d)[1]
@@ -56,9 +60,9 @@ function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
     va  = vp * h²
     nlc, nid = size(g1)
     nlc ÷= 1000
-    pks = Bv.random_scan(f1, pht, h², mlc=25_000)
-    pka = Bv.find_peaks(pks.emmax)
-    pkb = Bv.find_peaks(pks.bf)
+    tss = Bv.random_scan(f1, pht, h², mlc=25_000) # test statistics
+    pka = Bv.find_peaks(tss.emmax)
+    pkb = sort(tss, :emmax)
     open(rst, "a") do io
         print(io,
               lpad(r, 6),
@@ -69,7 +73,7 @@ function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
             print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
         end
         for w in [10, 20, 50]
-            print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
+            print(io, lpad(length(intersect(pka.ord[1:w], qtl.locus)), 4))
         end
         println(io)
     end
@@ -115,25 +119,25 @@ function simianer_scan(dir;
     isdir(dir) || mkdir(dir)
     macs = Sim.make_macs(tdir = dir)
     nid = nsire + ndam
-    μ, r, n₀, nbp = 1e-8, 1e-8, 1000, 174498729
+    μ, r, n₀, nbp = 1e-8, 1e-8, 1000, Int(2.5e8)
     θ, ρ = 4n₀ * μ, 4n₀ * r
     bar =  randstring(5)        # bar code for the current simulation
     cmd = `$macs $(2nid) $nbp -t $θ -r $ρ -eN .25 5.0 -eN 2.50 15.0 -eN 25.0 60.0 -eN 250.0 120.0 -eN 2500.0 1000.0`
 
     ##########
     open(rst, "w") do io
-        println(io, "repeat nmkr   h² nqtl e10 e20 e50 b10 b20 b50")
+        println(io, "repeat nmkr   h² nqtl e10 e20 e50 t10 t20 t50")
     end
     d = Normal()
     for r in 1:nrpt
         tprintln("  - Repeat $r")
-        for tlc in [50_000, 100_000, 150_000]
+        for tlc in [50_000, 100_000, 200_000]
             tprintln("    - Total markers: $tlc")
             g0, g1, smp = _9c59_g0_g1_smp(dir, cmd, bar, nbp, nsire, ndam, nsib, tlc)
             Fio.writemat(joinpath(dir, "$bar-f1.bin"), g1)
             for h² in [0.05, 0.3, 0.6]
                 tprintln("        - h² = $h²")
-                for nqtl in [500, 1000]
+                for nqtl in [1000, 500, 250]
                     tprintln("        - No. of QTL: $nqtl")
                     _9c59_sim_scan(g0, nqtl, d, joinpath(dir, "$bar-f1.bin"), h², rst, r)
                 end
