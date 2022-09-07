@@ -62,7 +62,8 @@ function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
     nlc ÷= 1000
     tss = Bv.random_scan(f1, pht, h², mlc=25_000) # test statistics
     pka = Bv.find_peaks(tss.emmax)
-    pkb = sort(tss, :emmax)
+    pkb = bv.find_peaks(tss.bf)
+    pkc = sort(tss, :emmax)
     open(rst, "a") do io
         print(io,
               lpad(r, 6),
@@ -73,7 +74,10 @@ function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
             print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
         end
         for w in [10, 20, 50]
-            print(io, lpad(length(intersect(pka.ord[1:w], qtl.locus)), 4))
+            print(io, lpad(length(intersect(pkb.pos[1:w], qtl.locus)), 4))
+        end
+        for w in [10, 20, 50]
+            print(io, lpad(length(intersect(pkc.ord[1:w], qtl.locus)), 4))
         end
         println(io)
     end
@@ -126,7 +130,7 @@ function simianer_scan(dir;
 
     ##########
     open(rst, "w") do io
-        println(io, "repeat nmkr   h² nqtl e10 e20 e50 t10 t20 t50")
+        println(io, "repeat nmkr   h² nqtl e10 e20 e50 b10 b20 b50 t10 t20 t50")
     end
     d = Normal()
     for r in 1:nrpt
