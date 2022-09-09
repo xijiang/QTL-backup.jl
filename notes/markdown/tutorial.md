@@ -1,8 +1,14 @@
 ---
+title: A breif introduction to MarkDown
+subtitle: Master it in 5-10 minutes
+author: Xijiang Yu
+institute: IHA, NMBU
+date: Sept. 9, 2022
+theme: Warsaw
 header-includes:
 	- \usepackage{mhchem}
 ---
-## What is markdown?
+## What is MarkDown?
 - plain text formatting syntax
   - plain text
   - easy to read and write
@@ -10,14 +16,26 @@ header-includes:
 - peripherals
   - editors
   - conversion tools
+  
+## Where is MarkDown
+- GitHub, Slack, MediaWiki
+- Teams, Emails
+- Notes taking
+- Books, Presentation, Documentation
+- Report and test field
+  - e.g., Jupyter
 
 ## What I am talking today
 - the markdown syntax
+  - a 5-10 min tour
 - some peripherals
-- some tricks
+- some tricks \pause
+- Not RMarkDown \pause
+
+![Rmd vs md](https://d33wubrfki0l68.cloudfront.net/61d189fd9cdf955058415d3e1b28dd60e1bd7c9b/b739c/lesson-images/rmarkdownflow.png)
 
 ## Most used elements of an article
-- structure, and paragraph
+- structure, and paragraphs
 - lists
 - text formatting / emphasis
 - tables
@@ -43,7 +61,7 @@ header-includes:
 :::: {.column width=.5}
 ```markdown
 - unordered
-  - item
+  - an ordinary item
   - [ ] item not checked
   - [x] item checked
 - ordered list
@@ -55,7 +73,7 @@ header-includes:
 - unordered
   - item
   - [ ] item not checked
-  - [x] ite checked
+  - [x] item checked
 - ordered list
   1. item one
   2. item two
@@ -148,22 +166,22 @@ $\begin{pmatrix}1 & 2\\3 & 4\end{pmatrix}$
 ::: {.columns}
 :::: {.column width=.5}
 ```markdown
-| First col | 2nd col | 3rd col | 
-| --: | :--: | :-- |
-| right adj. | centered | left adj. |
-| more | more | more |
-| ... | ... | ... |
+| col 1   | col 2 | col 3   |
+|--------:|:-----:|:--------|
+| r- adj. | cntrd | l- adj. |
+| more    | more  | more    |
+|  ...    | ...   | ...     |
 ```
 ::::
 :::: {.column width=.5}
 
 \hspace{3cm}
 
-|  First col | 2nd col  | 3rd col   |
-|-----------:|:--------:|:----------|
-| right adj. | centered | left adj. |
-|       more | more     | more      |
-|        ... | ...      | ...       |
+| col 1 | col 2  | col 3   |
+|--------:|:------:|:-------|
+| r- adj. | cntrd | l- adj. |
+|    more | more  | more    |
+|     ... | ...   | ...     |
 ::::
 :::
 
@@ -173,14 +191,14 @@ $\begin{pmatrix}1 & 2\\3 & 4\end{pmatrix}$
 ```markdown
 ![A picture from NMBU](https://www.nmbu.no/
 sites/default/files/styles/
-banner_landscape/public/nmbu-054462.jpg?itok=ShjhhfkM)
+banner_landscape/public/nmbu-054462.jpg)
 ```
 ::::
 :::: {.column width=.5}
 
 \hspace{3cm}
 
-![A picture from NMBU](https://www.nmbu.no/sites/default/files/styles/banner_landscape/public/nmbu-054462.jpg?itok=ShjhhfkM)
+![A picture from NMBU](https://www.nmbu.no/sites/default/files/styles/banner_landscape/public/nmbu-054462.jpg)
 ::::
 :::
  
@@ -200,7 +218,6 @@ banner_landscape/public/nmbu-054462.jpg?itok=ShjhhfkM)
 title: "An introduction to MarkDown"
 subtitle: "With many examples"
 author: "Xijiang Yu"
-description: "This is a good tutorial to MarkDown"
 institute: "NMBU"
 date: "29/03/2022"
 abstract: "Something you learn quick, may never forget"
@@ -235,7 +252,7 @@ $\begin{pmatrix}...\end{pmatrix}$
 
 ## Peripherals
 - editors
-  - emacs, vscode, vim, nano, notepad, jupyter-notebook
+  - emacs, vscode, vim, nano, notepad, jupyter-lab/notebook
   - any text editor
 - converters
   - e.g., pandoc

@@ -127,7 +127,7 @@ c = a'a        # -> 4×4 matrix
 ### Equations
 
 $e^{i\pi} + 1 = 0$, 
-$\begin{bmatrix}1 & 2 \\ 3 & 4\end{bmatrix}$, and
+$\begin{bmatrix}1 & 2 \\ 3 & 4\end{bmatrix}$,
 $\begin{pmatrix}1 & 2 \\ 3 & 4\end{pmatrix}$
 
 $\ce{Na2SO4 ->[H2O] 2Na+ + SO4^2-}$
@@ -137,14 +137,20 @@ $\ce{Na2SO4 ->[H2O] 2Na+ + SO4^2-}$
 \newpage
 
 ```markdown
-### Tables
+### Tables [^1]
+
+[^1]: This page is not in two columns.  A footnote example is shown here.
+
+<!-- This is a comment example, which will not show in target document. -->
 
 | Col 1 | 2 | 3 |
 | --: | :--: | :-- |
 | right adj. | centered | left adj. |
 | more | more | more |
 ```
-### Tables
+### Tables [^1]
+
+[^1]: This page is not in two columns.  A footnote example is shown here.
 
 |      Col 1 | 2        | 3         |
 |-----------:|:--------:|:----------|

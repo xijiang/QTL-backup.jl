@@ -50,13 +50,21 @@ Return `DataFrame(:pos, :ts)` on reverse order of `:ts`.
 """
 function find_peaks(ts)
     pks = DataFrame(pos = Int[], ts = Float64[])
-    p = -1e6
-    for i in eachindex(ts)
-        p > ts[i] && push!(pks, (i - 1, p))
-        p = ts[i]
+    n = length(ts)
+    for i in 2:n-1
+        if ts[i] > ts[i-1] && ts[i] > ts[i+1]
+            push!(pks, (i, ts[i]))
+        end
     end
-
     sort!(pks, :ts, rev=true)
+end
+
+"""
+    function local_peaks(ts; nw = 50)
+This function equally divides the genome in to `nw = 50`, by default windows.
+It then find the max values in each of these windows.
+"""
+function local_peaks(ts; nw = 50)
 end
 
 """
