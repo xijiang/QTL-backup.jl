@@ -61,9 +61,11 @@ function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
     nlc, nid = size(g1)
     nlc ÷= 1000
     tss = Bv.random_scan(f1, pht, h², mlc=25_000) # test statistics
-    pka = Bv.find_peaks(tss.emmax)
-    pkb = Bv.find_peaks(tss.bf)
-    pkc = sort(tss, :emmax)
+    # pka = Bv.find_peaks(tss.emmax)
+    # pkb = Bv.find_peaks(tss.bf)
+    # pkc = sort(tss, :emmax)
+    pka = Bv.local_peaks(tss.emmax)
+    pkb = Bv.local_peaks(tss.bf)
     open(rst, "a") do io
         print(io,
               lpad(r, 6),
@@ -76,9 +78,9 @@ function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
         for w in [10, 20, 50]
             print(io, lpad(length(intersect(pkb.pos[1:w], qtl.locus)), 4))
         end
-        for w in [10, 20, 50]
-            print(io, lpad(length(intersect(pkc.ord[1:w], qtl.locus)), 4))
-        end
+        # for w in [10, 20, 50]
+        #     print(io, lpad(length(intersect(pkc.ord[1:w], qtl.locus)), 4))
+        # end
         println(io)
     end
 end
@@ -115,7 +117,7 @@ function simianer_scan(dir;
         "Then the genotypes are dropped into F1.  " *
         "The simulation will repeat $nrpt times.  " *
         "All are working in director $dir.\n\n" *
-        "Results are in {cyan}$dir/$rst{/cyan}"
+        "Results are in {cyan}$rst{/cyan}"
     println(Aux.xpsmsg(desc, title, subtitle))
     Aux.separator(2)
 
@@ -130,7 +132,8 @@ function simianer_scan(dir;
 
     ##########
     open(rst, "w") do io
-        println(io, "repeat nmkr   h² nqtl e10 e20 e50 b10 b20 b50 t10 t20 t50")
+        # println(io, "repeat nmkr   h² nqtl e10 e20 e50 b10 b20 b50 t10 t20 t50")
+        println(io, "repeat nmkr   h² nqtl e10 e20 e50 b10 b20 b50")
     end
     d = Normal()
     for r in 1:nrpt

@@ -64,7 +64,20 @@ end
 This function equally divides the genome in to `nw = 50`, by default windows.
 It then find the max values in each of these windows.
 """
-function local_peaks(ts; nw = 50)
+function local_peaks(ts; nw = 88)
+    tpk = DataFrame(pos = Int[], ts = Float64[])
+    nlc = length(ts)
+    step = nlc ÷ nw
+    nlc % nw ≠ 0 && (step += 1)
+    steps = collect(step:step:nlc)
+    nlc ∈ steps || push!(steps, nlc)
+    start = 1
+    for step in steps
+        i = argmax(ts[start:step]) + start - 1
+        push!(tpk, (i, ts[i]))
+        start = step + 1
+    end
+    tpk
 end
 
 """
