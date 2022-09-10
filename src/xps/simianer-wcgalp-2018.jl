@@ -61,11 +61,10 @@ function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
     nlc, nid = size(g1)
     nlc ÷= 1000
     tss = Bv.random_scan(f1, pht, h², mlc=25_000) # test statistics
-    # pka = Bv.find_peaks(tss.emmax)
-    # pkb = Bv.find_peaks(tss.bf)
-    # pkc = sort(tss, :emmax)
-    pka = Bv.local_peaks(tss.emmax)
-    pkb = Bv.local_peaks(tss.bf)
+    pka = Bv.find_peaks(tss.emmax)
+    pkb = Bv.local_peaks(tss.emmax, nw = 250)
+    pkc = Bv.local_peaks(tss.emmax, nw = 500)
+    pkd = Bv.local_peaks(tss.emmax, nw = 1000)
     open(rst, "a") do io
         print(io,
               lpad(r, 6),
@@ -78,9 +77,12 @@ function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
         for w in [10, 20, 50]
             print(io, lpad(length(intersect(pkb.pos[1:w], qtl.locus)), 4))
         end
-        # for w in [10, 20, 50]
-        #     print(io, lpad(length(intersect(pkc.ord[1:w], qtl.locus)), 4))
-        # end
+        for w in [10, 20, 50]
+            print(io, lpad(length(intersect(pkc.ord[1:w], qtl.locus)), 4))
+        end
+        for w in [10, 20, 50]
+            print(io, lpad(length(intersect(pkd.ord[1:w], qtl.locus)), 4))
+        end
         println(io)
     end
 end
@@ -96,11 +98,11 @@ The F1 are then scanned.
 TS are constructed to find peaks to cover true QTL.
 """
 function simianer_scan(dir;
-                  nsire = 25,
-                  ndam = 500,
-                  nsib = 20,
-                  nrpt = 5,
-                  )
+                       nsire = 25,
+                       ndam = 500,
+                       nsib = 20,
+                       nrpt = 5
+                       )
     rst = joinpath(dir, "9c59.txt") # result file
 
     ##########
@@ -133,7 +135,8 @@ function simianer_scan(dir;
     ##########
     open(rst, "w") do io
         # println(io, "repeat nmkr   h² nqtl e10 e20 e50 b10 b20 b50 t10 t20 t50")
-        println(io, "repeat nmkr   h² nqtl e10 e20 e50 b10 b20 b50")
+        println(io, "repeat nmkr   h² nqtl " *
+            "a10 a20 a50 b10 b20 b50 c10 c20 c50 d10 d20 d50")
     end
     d = Normal()
     for r in 1:nrpt
@@ -146,7 +149,13 @@ function simianer_scan(dir;
                 tprintln("        - h² = $h²")
                 for nqtl in [1000, 500, 250]
                     tprintln("        - No. of QTL: $nqtl")
-                    _9c59_sim_scan(g0, nqtl, d, joinpath(dir, "$bar-f1.bin"), h², rst, r)
+                    _9c59_sim_scan(g0,
+                                   nqtl,
+                                   d,
+                                   joinpath(dir, "$bar-f1.bin"),
+                                   h²,
+                                   rst,
+                                   r)
                 end
             end
         end
