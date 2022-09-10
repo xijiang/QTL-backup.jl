@@ -78,10 +78,10 @@ function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
             print(io, lpad(length(intersect(pkb.pos[1:w], qtl.locus)), 4))
         end
         for w in [10, 20, 50]
-            print(io, lpad(length(intersect(pkc.ord[1:w], qtl.locus)), 4))
+            print(io, lpad(length(intersect(pkc.pos[1:w], qtl.locus)), 4))
         end
         for w in [10, 20, 50]
-            print(io, lpad(length(intersect(pkd.ord[1:w], qtl.locus)), 4))
+            print(io, lpad(length(intersect(pkd.pos[1:w], qtl.locus)), 4))
         end
         println(io)
     end
