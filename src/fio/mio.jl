@@ -139,3 +139,20 @@ function readmdm(file)
     read!(file, dim)
     dim
 end
+
+"""
+    function transmat(ii::String, oo::String)
+Transpose matrix stored in `ii`, and write the result in `oo`.
+"""
+function transmat(ii::String, oo::String)
+    m, n, t = begin
+        x = zeros(Int, 3)
+        read!(ii, x)
+        x
+    end
+    im = Mmap.mmap(ii, Matrix{codet(t)}, (m, n), 24)
+    open(oo, "w") do io
+        write(io, [n, m, t])
+        write(io, im')
+    end
+end

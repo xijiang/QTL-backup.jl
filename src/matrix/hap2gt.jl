@@ -13,3 +13,19 @@ function hap2gt(hps)
     end
     gt
 end
+
+"""
+    function hap2gt(ihp, ogt)
+Convert haplotypes in `ihp` into genotypes and write to `ogt`.
+"""
+function hap2gt(ihp, ogt)
+    nlc, nhp = Fio.readmdm(ihp)
+    nid = nhp ÷ 2
+    open(ogt, "w") do io
+        write(io, [nlc, nid, Fio.typec(Int8)])
+        hap = Mmap.mmap(ihp, Matrix{Int8}, (nlc, nhp), 24)
+        for i in 1:2:nhp
+            write(io, hap[:, i] + hap[:, i+1])
+        end
+    end
+end

@@ -111,14 +111,14 @@ function gamete(prt, hap, lms)
 end
 
 """
-    function drop(pg, og, pm, lms)
+    function drop(pg::Matrix{Int8}, og::Matrix{Int8}, pm, lms)
 Drop haplotypes `pg` of parents into `og`, their offspring genotypes.
 Parents of each offspring are defined in `pm`, which are rows of ``pa ma``.
 Linkage map summary `lms` is from `summap`.
 
-Note `g0` is of `nhap×nlc`, use `g0'` to feed this function.
+!!! ``Caution``: Merged data matrix from `MaCS` is `n-ID × n-loci`. Treat it with care.
 """
-function drop(pg, og, pm, lms)
+function drop(pg::Matrix{Int8}, og::Matrix{Int8}, pm, lms)
     nf = size(pm)[1]
     Threads.@threads for id in 1:nf
         ip = pm[id, 1]
@@ -135,6 +135,23 @@ function drop(pg, og, pm, lms)
 end
 
 """
+    function drop(fph::String, foh::String, pm, lms; mem=16.)
+Drop haplotypes of parents in `fpg` into `foh`, their offspring genotypes.
+Parents of each offspring are defined in `pm`, which are rows of ``pa ma``.
+Linkage map summary `lms` is from `summap` of module ``Sim``.
+
+!!! ``Caution``: Transpose the merged genotypes from `MaCS` before feed to this function.
+"""
+function drop(fph::String, foh::String, pm, lms; mem=16.)
+    nlc, nhp = Fio.readmdm(fpg)
+    nof = size(pm)[1]
+    oo = open(foh, "w+")
+    pg = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24)
+    og = Mmap.mmap(foh, Matrix{Int8}, (nlc, nof), 24)
+    close(oo)
+end
+
+"""
     function reproduce()
 Give a matrix `haps` of haplotypes of nHap (= 2nID) by nLoc, and a pedigree `ped`,
 (`[ID pa ma]`)
@@ -148,18 +165,6 @@ function reproduce(haps, ped, lms)
         gamete(pa, zi, lms)
         ma = view(haps, 2im-1:2im, :)
         zi = vec(view(haps, 2id, :))
-        gamete(ma, zi, lms)
-    end
-end
-
-function new_drop(pg, og, pm, lms)
-    dpm = [1:size(pm)[1] pm]
-    for (id, ip, im) in eachrow(dpm)
-        pa = view(pg, :, 2ip-1:2ip)
-        zi = vec(view(og, :, 2id-1))
-        gamete(pa, zi, lms)
-        ma = view(pg, :, 2im-1:2im)
-        zi = vec(view(og, :, 2id))
         gamete(ma, zi, lms)
     end
 end

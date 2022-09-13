@@ -13,5 +13,6 @@ using ..Fio, ..Mat, ..Sim, ..Bv, ..Aux
 include("one-generation.jl")
 include("simianer-wcgalp-2018.jl")
 include("try-func.jl")
+include("gwas-on-30m-snp.jl")
 
 end
