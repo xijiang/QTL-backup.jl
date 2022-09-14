@@ -1,6 +1,6 @@
 # This is a test to scan on ~30M SNP, to see if any QTL is covered by peaks.
 # code number: `echo Scan genome with ~30M SNP |md5sum` → e50b
-function e50b_sim_30_chr(dir = "dat")
+function e50b_gwas_30m_snp(dir = "dat")
     ########## Parameters ##########
     prj, nsr, ndm, nsb, nch, h², raw = "e50b", 100, 200, 50, 30, .6, joinpath(dir, "raw")
     nqtl, nrpt, nf0 = 1000, 5, nsr+ndm
@@ -36,6 +36,7 @@ function e50b_sim_30_chr(dir = "dat")
         println(io, "repeat     nmkr e10 e20 e50 b10 b20 b50")
     end
     for irpt in 1:nrpt
+        tprintln("- Repeat $irpt")
         ########## Base population ##########
         Threads.@threads for i in 1:nch
             run(pipeline(cmd,
@@ -51,14 +52,15 @@ function e50b_sim_30_chr(dir = "dat")
             tmp = Sim.random_mate(nsr, ndm)
             repeat(tmp, inner=(nsb, 1))
         end
-        
-        Sim.drop(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-h1.bin"), pms, lms)
+        tprintln("  - Creating F1")
+        Sim.drop(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-h1.bin"), pms, lms, mem=40)
         Mat.hap2gt(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-f0.bin"))
         Mat.hap2gt(joinpath(dir, "$bar-h1.bin"),  joinpath(dir, "$bar-f1.bin"))
         rm(joinpath(dir, "$bar-hap.bin")) # clean dir
         rm(joinpath(dir, "$bar-h1.bin"))
 
         ########## Simulate phenotypes and scan ##########
+        tprintln(" - Random scan")
         nlc, nf1 = Fio.readmdm(joinpath(dir, "$bar-f1.bin"))
         g0 = Mmap.mmap(joinpath(dir, "$bar-f0.bin"), Matrix{Float64}, (nlc, nf0), 24)
         g1 = Mmap.mmap(joinpath(dir, "$bar-f1.bin"), Matrix{Float64}, (nlc, nf1), 24)
@@ -83,20 +85,4 @@ function e50b_sim_30_chr(dir = "dat")
             end
         end
     end
-end
-
-
-function e50b_test(dir = "dat")
-    bar = "YTNrI"
-    nlc, nf0 = Fio.readmdm(joinpath(dir, "$bar-f0.bin"))
-    g0 = Mmap.mmap(joinpath(dir, "$bar-f0.bin"), Matrix{Int8}, (nlc, nf0), 24)
-    nlc, nf1 = Fio.readmdm(joinpath(dir, "$bar-f1.bin"))
-    g1 = Mmap.mmap(joinpath(dir, "$bar-f1.bin"), Matrix{Int8}, (nlc, nf1), 24)
-    qtl = Sim.simQTL(g0, 1000, d = Normal())[1]
-    bv  = Sim.breeding_value(g1, qtl)
-    pht = Sim.phenotype(bv, .6)
-    vp  = var(pht)
-    va  = var(bv)
-    mlc = Aux.blksz(nlc, 20_000)
-    tss = Bv.random_scan(joinpath(dir, "$bar-f1.bin"), pht, .6, mlc=mlc)
 end
