@@ -47,12 +47,13 @@ Returns
 - allele frequencies
 """
 function read_macs(file)
-    gt, ps = Int8[], Float64[]
+    gt, ps = Int8[], Int[]
     open(file, "r") do io
+        nbp = parse(Float64, split(readline(io))[4])
         for line in eachline(io)
             (line[1:4] ≠ "SITE") && continue
             _, _, p, _, as = split(line)
-            push!(ps, parse(Float64, p))
+            push!(ps, Int(ceil(parse(Float64, p) * nbp)))
             a = parse.(Int8, collect(as))
             append!(gt, a)
         end
@@ -264,8 +265,8 @@ function macs2haps(raw)
         i
     end
     alc = 0                     # accumulated n-loci
-    tmap = DataFrame(chr = zeros(Int8, nlc),
-                     pos = zeros(Float64, nlc),
+    tmap = DataFrame(chr = zeros(Int8,    nlc),
+                     pos = zeros(Int64,   nlc),
                      frq = zeros(Float64, nlc))
     open(fgt, "w+") do io
         write(io, [nlc, nhp, Fio.typec(Int8)])
@@ -285,7 +286,7 @@ function macs2haps(raw)
     end
     serialize(joinpath(parent, "$bar-map.ser"), tmap)
     println()
-    nothing
+    bar
 end
 
 """

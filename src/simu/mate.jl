@@ -135,20 +135,47 @@ function drop(pg::Matrix{Int8}, og::Matrix{Int8}, pm, lms)
 end
 
 """
-    function drop(fph::String, foh::String, pm, lms; mem=16.)
-Drop haplotypes of parents in `fpg` into `foh`, their offspring genotypes.
+    function drop(fph::String, foh::String, pm, lms; mem = 4.)
+Drop haplotypes of parents in `fph` into `foh`, their offspring genotypes.
+Both these two matrices should be of dimension `nLoci × nHap`.
 Parents of each offspring are defined in `pm`, which are rows of ``pa ma``.
 Linkage map summary `lms` is from `summap` of module ``Sim``.
 
-!!! ``Caution``: Transpose the merged genotypes from `MaCS` before feed to this function.
+This function use only 4G RAM by default.
 """
-function drop(fph::String, foh::String, pm, lms; mem=16.)
-    nlc, nhp = Fio.readmdm(fpg)
+function drop(fph::String, foh::String, pm, lms; mem = 4.)
+    nlc, nhp = Fio.readmdm(fph)
     nof = size(pm)[1]
-    oo = open(foh, "w+")
-    pg = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24)
-    og = Mmap.mmap(foh, Matrix{Int8}, (nlc, nof), 24)
-    close(oo)
+    ph = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24)
+
+    # Determine how many offspring to deal a time
+    stps = begin
+        blk = Int(floor(mem * 1024 ^ 3 / nlc / 3))
+        t =  collect(blk:blk:nof)
+        nof ∉ t && push!(t, nof)
+        t
+    end
+    open(foh, "w+") do io
+        write(io, [nlc, 2nof, Fio.typec(Int8)])
+        oh = Mmap.mmap(io, Matrix{Int8}, (nlc, 2nof), 24)
+        fra = 0
+        for step in stps
+            Threads.@threads for id in fra+1:fra+step
+                ip = pm[id, 1]
+                pa = view(ph, :, 2ip-1:2ip)
+                zi = vec(view(oh, :, 2id - 1))
+                gamete(pa, zi, lms)
+            end
+            Threads.@threads for id in fra+1:fra+step
+                im = pm[id, 2]
+                ma = view(ph, :, 2im-1:2im)
+                zi = vec(view(oh, :, 2id))
+                gamete(ma, zi, lms)
+            end
+            fra = step
+            Mmap.sync!(oh)
+        end
+    end
 end
 
 """
