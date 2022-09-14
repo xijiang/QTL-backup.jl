@@ -153,8 +153,9 @@ function sim_salmon_seq(macs, dir; nid = 4000)
     wdir = mktempdir(dir)
 
     tprintln("  - Simulate founder salmon data in parallele")
+    seed = rand(Int32, length(lns))
     Threads.@threads for chr in 1:length(lns)
-        cmd = `$macs $(2nid) $(lns[chr]) -t $θ -r $ρ -eN 0.25 5.0 -eN 2.50 15.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0`
+        cmd = `$macs $(2nid) $(lns[chr]) -s $(seed[chr]) -t $θ -r $ρ -eN 0.25 5.0 -eN 2.50 15.0 -eN 25.00 60.0 -eN 250.00 120.0 -eN 2500.00 1000.0`
         run(pipeline(cmd,
                      stderr = joinpath(wdir, "info.$chr"),
                      stdout = joinpath(wdir, "chr.$chr")))
@@ -277,7 +278,7 @@ function macs2haps(raw)
             gt, ps, fq = read_macs(chr)
             m = size(gt)[1]
             copyto!(view(hps, alc+1:alc+m, :), gt)
-            tmap.chr .= c
+            view(tmap.chr, alc+1:alc+m) .= c
             copyto!(view(tmap.pos, alc+1:alc+m), ps)
             copyto!(view(tmap.frq, alc+1:alc+m), fq)
             alc += m
@@ -306,7 +307,8 @@ function sim_one_chr(dir, nid, bar;
                      nbp = 1e8
                      )
     macs = make_macs(tdir = dir)
-    cmd = `$macs $(2nid) $nbp -t $θ -r $ρ -eN .25 5.0 -eN 2.50 15.0 -eN 25.0 60.0 -eN 250.0 120.0 -eN 2500.0 1000.0`
+    seed = rand(Int32)
+    cmd = `$macs $(2nid) $nbp -s $seed -t $θ -r $ρ -eN .25 5.0 -eN 2.50 15.0 -eN 25.0 60.0 -eN 250.0 120.0 -eN 2500.0 1000.0`
     run(pipeline(cmd,
                  stderr = joinpath(dir, "$bar.info"),
                  stdout = joinpath(dir, "$bar.chr")))

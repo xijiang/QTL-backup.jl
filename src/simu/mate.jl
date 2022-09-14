@@ -135,45 +135,27 @@ function drop(pg::Matrix{Int8}, og::Matrix{Int8}, pm, lms)
 end
 
 """
-    function drop(fph::String, foh::String, pm, lms; mem = 4.)
+    function drop(fph::String, foh::String, pm, lms)
 Drop haplotypes of parents in `fph` into `foh`, their offspring genotypes.
 Both these two matrices should be of dimension `nLoci × nHap`.
 Parents of each offspring are defined in `pm`, which are rows of ``pa ma``.
 Linkage map summary `lms` is from `summap` of module ``Sim``.
-
-This function use only 4G RAM by default.
 """
-function drop(fph::String, foh::String, pm, lms; mem = 4.)
+function drop(fph::String, foh::String, pm, lms)
     nlc, nhp = Fio.readmdm(fph)
     nof = size(pm)[1]
-    ph = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24)
-
-    # Determine how many offspring to deal a time
-    stps = begin
-        blk = Int(floor(mem * 1024 ^ 3 / nlc / 3))
-        t =  collect(blk:blk:nof)
-        nof ∉ t && push!(t, nof)
-        t
-    end
-    open(foh, "w+") do io
+    mph = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24) # mmap of parental haplotypes
+    open(foh, "w") do io
         write(io, [nlc, 2nof, Fio.typec(Int8)])
-        oh = Mmap.mmap(io, Matrix{Int8}, (nlc, 2nof), 24)
-        fra = 0
-        for step in stps
-            Threads.@threads for id in fra+1:fra+step
-                ip = pm[id, 1]
-                pa = view(ph, :, 2ip-1:2ip)
-                zi = vec(view(oh, :, 2id - 1))
-                gamete(pa, zi, lms)
-            end
-            Threads.@threads for id in fra+1:fra+step
-                im = pm[id, 2]
-                ma = view(ph, :, 2im-1:2im)
-                zi = vec(view(oh, :, 2id))
-                gamete(ma, zi, lms)
-            end
-            fra = step
-            Mmap.sync!(oh)
+        moh = Mmap.mmap(io, Matrix{Int8}, (nlc, 2nof), 24) # mmap of offspring haplotypes
+        for cmp in groupby(lms, :chr)
+            fra, cln = cmp.bgn[1], cmp.nlc[1] # cln: chromosome loci number
+            til = cln + fra - 1
+            oh = zeros(Int8, cln, 2nof)
+            ph = copy(mph[fra:til, :])
+            drop(ph, oh, pm, cmp)
+            copyto!(view(moh, fra:til, :), ph)
+            Mmap.sync!(moh)
         end
     end
 end

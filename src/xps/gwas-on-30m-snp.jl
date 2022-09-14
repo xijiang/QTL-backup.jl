@@ -1,17 +1,27 @@
 # This is a test to scan on ~30M SNP, to see if any QTL is covered by peaks.
 # code number: `echo Scan genome with ~30M SNP |md5sum` → e50b
-function e50b_gwas_30m_snp(dir = "dat")
+function e50b_gwas_30m_snp(;
+                           prj = "e50b",
+                           dir = "dat",
+                           nsr = 100,
+                           ndm = 200,
+                           nsb = 50,
+                           nch = 30,
+                           h²  = .6,
+                           nqtl = 1_000,
+                           nrpt = 5,
+                           blk = 20_000)
     ########## Parameters ##########
-    prj, nsr, ndm, nsb, nch, h², raw = "e50b", 100, 200, 50, 30, .6, joinpath(dir, "raw")
-    nqtl, nrpt, nf0 = 1000, 5, nsr+ndm
-    blk, rst = 20_000, joinpath(dir, "$prj.txt")
+    raw = joinpath(dir, "raw")
+    nf0 = nsr+ndm
+    rst = joinpath(dir, "$prj.txt")
 
     isdir(dir) || mkpath(dir)
     isdir(raw) || mkdir(raw)
     macs = Sim.make_macs(tdir = dir)
-    μ, r, n₀, nbp = 1e-8, 1e-8, 10000, Int(1e8)
+    μ, r, n₀, nbp = 1e-8, 1e-8, 10_000, Int(1e8)
     θ, ρ = 4n₀ * μ, 4n₀ * r
-    cmd = `$macs $(2nf0) $nbp -t $θ -r $ρ -eN .25 5. -eN 2.50 15. -eN 25. 60. -eN 250. 120. -eN 2500. 1000.`
+    seed = rand(Int32, nch)
 
     ########## Messages ##########
     title = "$prj: Scan genome with ~30M SNP"
@@ -39,6 +49,9 @@ function e50b_gwas_30m_snp(dir = "dat")
         tprintln("- Repeat $irpt")
         ########## Base population ##########
         Threads.@threads for i in 1:nch
+            cmd = `$macs $(2nf0) $nbp
+                         -s $(seed[i]) -t $θ -r $ρ
+                         -eN .25 5. -eN 2.50 15. -eN 25. 60. -eN 250. 120. -eN 2500. 1000.`
             run(pipeline(cmd,
                          stderr = joinpath(raw, "info.$i"),
                          stdout = joinpath(raw, "chr.$i")))
@@ -53,7 +66,7 @@ function e50b_gwas_30m_snp(dir = "dat")
             repeat(tmp, inner=(nsb, 1))
         end
         tprintln("  - Creating F1")
-        Sim.drop(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-h1.bin"), pms, lms, mem=40)
+        Sim.drop(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-h1.bin"), pms, lms)
         Mat.hap2gt(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-f0.bin"))
         Mat.hap2gt(joinpath(dir, "$bar-h1.bin"),  joinpath(dir, "$bar-f1.bin"))
         rm(joinpath(dir, "$bar-hap.bin")) # clean dir
@@ -84,5 +97,19 @@ function e50b_gwas_30m_snp(dir = "dat")
                 print(io, lpad(length(intersect(pkb.pos[1:w], qtl.locus)), 4))
             end
         end
+        rm(joinpath(dir, "$bar-f1.bin"))
+    end
+end
+
+function e50b_test()
+    macs, raw = "dat/macs", "dat/raw"
+    isdir(raw) || mkdir(raw)
+    μ, r, n₀, nbp = 1e-8, 1e-8, 10_000, Int(1e8)
+    θ, ρ = 4n₀ * μ, 4n₀ * r
+    cmd = `$macs 300 $nbp -t $θ -r $ρ -eN .25 5. -eN 2.50 15. -eN 25. 60. -eN 250. 120. -eN 2500. 1000.`
+    Threads.@threads for i in 1:8
+        run(pipeline(cmd,
+                     stderr = joinpath(raw, "info.$i"),
+                     stdout = joinpath(raw, "chr.$i")))
     end
 end

@@ -130,7 +130,8 @@ function simianer_scan(dir;
     μ, r, n₀, nbp = 1e-8, 1e-8, 1000, Int(2.5e8)
     θ, ρ = 4n₀ * μ, 4n₀ * r
     bar =  randstring(5)        # bar code for the current simulation
-    cmd = `$macs $(2nid) $nbp -t $θ -r $ρ -eN .25 5.0 -eN 2.50 15.0 -eN 25.0 60.0 -eN 250.0 120.0 -eN 2500.0 1000.0`
+    seed = rand(Int32)
+    cmd = `$macs $(2nid) $nbp -s $seed -t $θ -r $ρ -eN .25 5.0 -eN 2.50 15.0 -eN 25.0 60.0 -eN 250.0 120.0 -eN 2500.0 1000.0`
 
     ##########
     open(rst, "w") do io
