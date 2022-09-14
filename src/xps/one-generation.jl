@@ -162,9 +162,9 @@ function _cd1f_is_blk_size_matter(nlc, dir, bar, pht, h², dstr, nqtl, r, qtl, o
     for bs in blks
         tprintln(lpad("Block size $bs", 60))                     
         mlc = Aux.blksz(nlc, bs)
-        rst = Bv.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
-        pka = Bv.find_peaks(rst.emmax)
-        pkb = Bv.find_peaks(rst.bf)
+        rst = Eva.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
+        pka = Eva.find_peaks(rst.emmax)
+        pkb = Eva.find_peaks(rst.bf)
         open("$dir/$out", "a") do io
             print(io,
                   lpad(dstr, 8),
@@ -187,9 +187,9 @@ function _cd1f_scan_n_eval(dir, bar, nlc, pht, h², dstr, qtl, r, out;
                            save_pks=false,
                            bs = 18_000)
     mlc = Aux.blksz(nlc, bs)
-    rst = Bv.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
-    pka = Bv.find_peaks(rst.emmax)
-    pkb = Bv.find_peaks(rst.bf)
+    rst = Eva.random_scan("$dir/$bar-f1.bin", pht, h², mlc=mlc)
+    pka = Eva.find_peaks(rst.emmax)
+    pkb = Eva.find_peaks(rst.bf)
     if save_pks
         @info "writing peaks"
         serialize("$dir/$bar-pks.ser", (pka, pkb))

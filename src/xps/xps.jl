@@ -8,7 +8,7 @@ gene editing studies.
 module Xps
 using Distributions, Term, Dates, DataFrames, Serialization
 using Random, Mmap, LinearAlgebra
-using ..Fio, ..Mat, ..Sim, ..Bv, ..Aux
+using ..Fio, ..Mat, ..Sim, ..Eva, ..Aux
 
 include("one-generation.jl")
 include("simianer-wcgalp-2018.jl")

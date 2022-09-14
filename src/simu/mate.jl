@@ -145,7 +145,7 @@ function drop(fph::String, foh::String, pm, lms)
     nlc, nhp = Fio.readmdm(fph)
     nof = size(pm)[1]
     mph = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24) # mmap of parental haplotypes
-    open(foh, "w") do io
+    open(foh, "w+") do io
         write(io, [nlc, 2nof, Fio.typec(Int8)])
         moh = Mmap.mmap(io, Matrix{Int8}, (nlc, 2nof), 24) # mmap of offspring haplotypes
         for cmp in groupby(lms, :chr)

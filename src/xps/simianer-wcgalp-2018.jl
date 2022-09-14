@@ -60,11 +60,11 @@ function _9c59_sim_scan(g0, nqtl, d, f1, h², rst, r)
     va  = vp * h²
     nlc, nid = size(g1)
     nlc ÷= 1000
-    tss = Bv.random_scan(f1, pht, h², mlc=25_000) # test statistics
-    pka = Bv.find_peaks(tss.emmax)
-    pkb = Bv.local_peaks(tss.emmax, nw = 250)
-    pkc = Bv.local_peaks(tss.emmax, nw = 500)
-    pkd = Bv.local_peaks(tss.emmax, nw = 1000)
+    tss = Eva.random_scan(f1, pht, h², mlc=25_000) # test statistics
+    pka = Eva.find_peaks(tss.emmax)
+    pkb = Eva.local_peaks(tss.emmax, nw = 250)
+    pkc = Eva.local_peaks(tss.emmax, nw = 500)
+    pkd = Eva.local_peaks(tss.emmax, nw = 1000)
     open(rst, "a") do io
         print(io,
               lpad(r, 6),

@@ -83,9 +83,9 @@ function e50b_gwas_30m_snp(;
         vp  = var(pht)
         va  = var(bv)
         mlc = Aux.blksz(nlc, blk)
-        tss = Bv.random_scan(joinpath(dir, "$bar-f1.bin"), pht, h², mlc=mlc)
-        pka = Bv.find_peaks(tss.emmax)
-        pkb = Bv.find_peaks(tss.bf)
+        tss = Eva.random_scan(joinpath(dir, "$bar-f1.bin"), pht, h², mlc=mlc)
+        pka = Eva.find_peaks(tss.emmax)
+        pkb = Eva.find_peaks(tss.bf)
         open(rst, "a") do io
             print(io,
                     lpad(irpt, 6),

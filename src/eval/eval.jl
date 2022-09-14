@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 
-module Bv
+module Eva
 using Distributions, DataFrames, Octavian, LinearAlgebra,
     Statistics, Mmap, Random, Dates, Term, ..Fio, ..Aux
 
