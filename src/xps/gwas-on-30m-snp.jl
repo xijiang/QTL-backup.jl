@@ -10,7 +10,7 @@ function e50b_gwas_30m_snp(;
                            h²  = .6,
                            nqtl = 1_000,
                            nrpt = 5,
-                           nthreads = 12,
+                           nthreads = 4,
                            blk = 20_000)
     BLAS.set_num_threads(nthreads)
     
@@ -37,8 +37,8 @@ function e50b_gwas_30m_snp(;
         "The heritability of the trait is $h².  " *
         "$nqtl QTL of normal distribution are simulated.\n\n" *
         "The founder population is from {cyan}$macs{/cyan}. " *
-        "Then the genotypes are dropped into F1.  " *
-        "Genome scan are performed on F1.  " *
+        "Then the genotypes are dropped into F₁.  " *
+        "Genome scan are performed on F₁.  " *
         "The simulation will repeat $nrpt times.  " *
         "All jobs are working in director {cyan}$dir{/cyan}.\n\n" *
         "Results are written in {cyan}$dir/$prj.txt{/cyan}"

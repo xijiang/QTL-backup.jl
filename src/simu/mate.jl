@@ -148,7 +148,7 @@ function drop(fph::String, foh::String, pm, lms)
     open(foh, "w+") do io
         write(io, [nlc, 2nof, Fio.typec(Int8)])
         moh = Mmap.mmap(io, Matrix{Int8}, (nlc, 2nof), 24) # mmap of offspring haplotypes
-        println("  - Dropping on chromosome:")
+        tprintln("    - Dropping on chromosome:")
         for cmp in groupby(lms, :chr)
             tprint(" $(cmp.chr[1])")
             fra, cln = cmp.bgn[1], cmp.nlc[1] # cln: chromosome loci number
