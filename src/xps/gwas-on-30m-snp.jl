@@ -10,7 +10,10 @@ function e50b_gwas_30m_snp(;
                            h²  = .6,
                            nqtl = 1_000,
                            nrpt = 5,
+                           nthreads = 12,
                            blk = 20_000)
+    BLAS.set_num_threads(nthreads)
+    
     ########## Parameters ##########
     raw = joinpath(dir, "raw")
     nf0 = nsr+ndm
@@ -102,14 +105,11 @@ function e50b_gwas_30m_snp(;
 end
 
 function e50b_test()
-    macs, raw = "dat/macs", "dat/raw"
-    isdir(raw) || mkdir(raw)
-    μ, r, n₀, nbp = 1e-8, 1e-8, 10_000, Int(1e8)
-    θ, ρ = 4n₀ * μ, 4n₀ * r
-    cmd = `$macs 300 $nbp -t $θ -r $ρ -eN .25 5. -eN 2.50 15. -eN 25. 60. -eN 250. 120. -eN 2500. 1000.`
-    Threads.@threads for i in 1:8
-        run(pipeline(cmd,
-                     stderr = joinpath(raw, "info.$i"),
-                     stdout = joinpath(raw, "chr.$i")))
+    nsr, ndm, nsb, dir, bar = 100, 200, 50, "/mnt/a/store/tmp", "LKSko"
+    lms = Sim.summap(deserialize(joinpath(dir, "$bar-map.ser")))
+    pms = begin
+        tmp = Sim.random_mate(nsr, ndm)
+        repeat(tmp, inner=(nsb, 1))
     end
+    Sim.drop(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-h1.bin"), pms, lms)
 end
