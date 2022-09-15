@@ -90,7 +90,7 @@ Results returned are sorted along the genome.
 function random_scan(fgt, pht, h²; mlc = 10_000)
     vp = var(pht)
     va = vp * h²
-    nlc, nid = Fio.readmdm(fgt)
+    nlc, nid = Fio.readdim(fgt)
     w = length(string(nlc)) + 28
     gt = Mmap.mmap(fgt, Matrix{Int8}, (nlc, nid), 24)
 

@@ -1,12 +1,20 @@
 """
-    function breeding_value(gt, qtl)
+    function breeding_value(gt::Matrix{Int8}, qtl)
 Given genotype `gt` of `nloc × nid`, and QTL information `qtl`,
 this function returns a vector of breeding value.
 """
-function breeding_value(gt, qtl)
+function breeding_value(gt::Matrix{Int8}, qtl)
     nlc, nid = size(gt)
     lcs = view(gt, qtl.locus, :)
     vec(lcs'qtl.effect)
+end
+
+function breeding_value(fgt::String, qtl)
+    nlc, nid = Fio.readdim(fgt)
+    gt = Mmap.mmap(fgt, Matrix{Int8}, (nlc, nid), 24)
+    Q  = zeros(Int8, length(qtl.locus), nid)
+    copyto!(Q, view(gt, qtl.locus, :))
+    vec(Q'qtl.effect)
 end
 
 """

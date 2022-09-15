@@ -142,7 +142,7 @@ Parents of each offspring are defined in `pm`, which are rows of ``pa ma``.
 Linkage map summary `lms` is from `summap` of module ``Sim``.
 """
 function drop(fph::String, foh::String, pm, lms)
-    nlc, nhp = Fio.readmdm(fph)
+    nlc, nhp = Fio.readdim(fph)
     nof = size(pm)[1]
     mph = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24) # mmap of parental haplotypes
     open(foh, "w+") do io
@@ -158,7 +158,7 @@ function drop(fph::String, foh::String, pm, lms)
             cmp.bgn[1] = 1
             drop(ph, oh, pm, cmp)
             cmp.bgn[1] = fra
-            copyto!(view(moh, fra:til, :), ph)
+            copyto!(view(moh, fra:til, :), oh)
             Mmap.sync!(moh)
         end
         println()

@@ -18,17 +18,18 @@ end
     function hap2gt(ihp::String, ogt::String)
 Convert haplotypes in `ihp` into genotypes and write to `ogt`.
 """
-function hap2gt(ihp::String, ogt::String)
-    nlc, nhp = Fio.readmdm(ihp)
+function hap2gt(ihp::String, ogt::String; buf = 8)
+    nlc, nhp = Fio.readdim(ihp)
+    nln = buf * 1024^3 ÷ nlc
+    iseven(nln) || (nln -= 1)
     open(ogt, "w+") do io
         write(io, [nlc, nhp÷2, Fio.typec(Int8)])
         hap = Mmap.mmap(ihp, Matrix{Int8}, (nlc, nhp), 24)
         ohp = Mmap.mmap(io,  Matrix{Int8}, (nlc, nhp ÷ 2), 24)
         for i in 2:2:nhp
             id = i ÷ 2
-            view(ohp, :, id) = hap[:, i - 1] + hap[:, i]
-            i % 200 == 0 && Mmap.sync!(ohp)
+            copyto!(view(ohp, :, id), hap[:, i - 1] + hap[:, i])
+            i % nln == 0 || i == nhp && Mmap.sync!(ohp)
         end
-        Mmap.sync!(ohp)
     end
 end

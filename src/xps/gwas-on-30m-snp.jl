@@ -40,7 +40,7 @@ function e50b_gwas_30m_snp(;
         "Then the genotypes are dropped into F₁.  " *
         "Genome scan are performed on F₁.  " *
         "The simulation will repeat $nrpt times.  " *
-        "All jobs are working in director {cyan}$dir{/cyan}.\n\n" *
+        "All jobs are working in directory {cyan}$dir{/cyan}.\n\n" *
         "Results are written in {cyan}$dir/$prj.txt{/cyan}"
     println(Aux.xpsmsg(desc, title, subtitle))
     Aux.separator(2)
@@ -77,7 +77,7 @@ function e50b_gwas_30m_snp(;
 
         ########## Simulate phenotypes and scan ##########
         tprintln(" - Random scan")
-        nlc, nf1 = Fio.readmdm(joinpath(dir, "$bar-f1.bin"))
+        nlc, nf1 = Fio.readdim(joinpath(dir, "$bar-f1.bin"))
         g0 = Mmap.mmap(joinpath(dir, "$bar-f0.bin"), Matrix{Float64}, (nlc, nf0), 24)
         g1 = Mmap.mmap(joinpath(dir, "$bar-f1.bin"), Matrix{Float64}, (nlc, nf1), 24)
         qtl = Sim.simQTL(g0, nqtl, d = Normal())[1]
@@ -105,11 +105,4 @@ function e50b_gwas_30m_snp(;
 end
 
 function e50b_test()
-    nsr, ndm, nsb, dir, bar = 100, 200, 50, "/mnt/a/store/tmp", "LKSko"
-    lms = Sim.summap(deserialize(joinpath(dir, "$bar-map.ser")))
-    pms = begin
-        tmp = Sim.random_mate(nsr, ndm)
-        repeat(tmp, inner=(nsb, 1))
-    end
-    Sim.drop(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-h1.bin"), pms, lms)
 end
