@@ -144,24 +144,49 @@ Linkage map summary `lms` is from `summap` of module ``Sim``.
 function drop(fph::String, foh::String, pm, lms)
     nlc, nhp = Fio.readdim(fph)
     nof = size(pm)[1]
+    write(foh, [nlc, 2nof, Fio.typec(Int8)])
     mph = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24) # mmap of parental haplotypes
-    open(foh, "w+") do io
-        write(io, [nlc, 2nof, Fio.typec(Int8)])
-        moh = Mmap.mmap(io, Matrix{Int8}, (nlc, 2nof), 24) # mmap of offspring haplotypes
-        tprintln("    - Dropping on chromosome:")
-        for cmp in groupby(lms, :chr)
-            tprint(" $(cmp.chr[1])")
-            fra, cln = cmp.bgn[1], cmp.nlc[1] # cln: chromosome loci number
-            til = cln + fra - 1
-            oh = zeros(Int8, cln, 2nof)
-            ph = copy(mph[fra:til, :])
-            cmp.bgn[1] = 1
-            drop(ph, oh, pm, cmp)
-            cmp.bgn[1] = fra
-            copyto!(view(moh, fra:til, :), oh)
-            Mmap.sync!(moh)
+    
+    tprintln("    - Dropping on chromosome:")
+    dir = dirname(foh)
+    chr, clc = [], Int[]
+    for cmp in groupby(lms, :chr)
+        tprint(" $(cmp.chr[1])")
+        fra, cln = cmp.bgn[1], cmp.nlc[1] # cln: chromosome loci number
+        til = cln + fra - 1
+        oh = zeros(Int8, cln, 2nof)
+        ph = copy(mph[fra:til, :])
+        cmp.bgn[1] = 1
+        drop(ph, oh, pm, cmp)
+        cmp.bgn[1] = fra
+        tfn = joinpath(dir, "__tmp__.$(cmp.chr[1])")
+        write(tfn, oh)
+        push!(chr, tfn)
+        push!(clc, cln)
+    end
+    
+    tprintln("\n    - Merging the chromosomes")
+    open(foh, "a") do io
+        ii = [open(x) for x in chr]
+        th = []
+        for n in clc
+            push!(th, zeros(Int8, n))
         end
-        println()
+        for j in 1:2nof
+            k = 1
+            for i in ii
+                read!(i, th[k])
+                write(io, th[k])
+                k += 1
+            end
+        end
+        for i in ii
+            close(i)
+        end
+    end
+    # clean the temporary files
+    for f in chr
+        rm(f)
     end
 end
 
