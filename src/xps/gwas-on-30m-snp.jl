@@ -1,3 +1,12 @@
+function e50b_chr_batch(nch, nb = 6)
+    batch = []
+    for i in 1:nch÷nb
+        i > 0 && push!(batch, collect(1:nb) .+ (i-1) * nb)
+    end
+    nch % nb > 0 && push!(batch, collect(1:nch%nb) .+ (nch÷nb) * nb)
+    batch
+end    
+
 # This is a test to scan on ~30M SNP, to see if any QTL is covered by peaks.
 # code number: `echo Scan genome with ~30M SNP |md5sum` → e50b
 function e50b_gwas_30m_snp(;
@@ -51,13 +60,18 @@ function e50b_gwas_30m_snp(;
     for irpt in 1:nrpt
         tprintln("- Repeat $irpt")
         ########## Base population ##########
-        Threads.@threads for i in 1:nch
-            cmd = `$macs $(2nf0) $nbp
-                         -s $(seed[i]) -t $θ -r $ρ
-                         -eN .25 5. -eN 2.50 15. -eN 25. 60. -eN 250. 120. -eN 2500. 1000.`
-            run(pipeline(cmd,
-                         stderr = joinpath(raw, "info.$i"),
-                         stdout = joinpath(raw, "chr.$i")))
+        tprintln("  - Simulating $nch chromosomes")
+        batch = e50b_chr_batch(nch)
+        for btch in batch
+            Threads.@threads for i in 1:btch
+                cmd = `$macs $(2nf0) $nbp
+                                     -s $(seed[i]) -t $θ -r $ρ
+                                     -eN .25 5. -eN 2.50 15. -eN 25. 60. -eN 250. 120. -eN 2500. 1000.`
+                run(pipeline(cmd,
+                             stderr = joinpath(raw, "info.$i"),
+                             stdout = joinpath(raw, "chr.$i")))
+                tprintln(" $i")
+            end
         end
         bar = Sim.macs2haps(raw)
         rm(raw, recursive=true, force=true) # clean dir
@@ -104,5 +118,5 @@ function e50b_gwas_30m_snp(;
     end
 end
 
-function e50b_test()
+function e50b_test(nch)
 end
