@@ -63,7 +63,7 @@ function e50b_gwas_30m_snp(;
         tprintln("  - Simulating $nch chromosomes")
         batch = e50b_chr_batch(nch)
         for btch in batch
-            Threads.@threads for i in 1:btch
+            Threads.@threads for i in btch
                 cmd = `$macs $(2nf0) $nbp
                                      -s $(seed[i]) -t $θ -r $ρ
                                      -eN .25 5. -eN 2.50 15. -eN 25. 60. -eN 250. 120. -eN 2500. 1000.`
