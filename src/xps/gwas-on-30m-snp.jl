@@ -19,8 +19,11 @@ function e50b_gwas_30m_snp(;
                            h²  = .6,
                            nqtl = 1_000,
                            nrpt = 5,
-                           nthreads = 4,
+                           nthreads = 10,
                            blk = 20_000)
+    start_time = now()
+    nthreads < 8 && (nthreads = 8)
+    nthreads > Threads.nthreads() && (nthreads = Threads.nthreads() - 1)
     BLAS.set_num_threads(nthreads)
     
     ########## Parameters ##########
@@ -44,7 +47,8 @@ function e50b_gwas_30m_snp(;
         "This is a simulation with $nsr sires, " *
         "$ndm dams, each dam has $nsb sibs.  " *
         "The heritability of the trait is $h².  " *
-        "$nqtl QTL of normal distribution are simulated.\n\n" *
+        "$nch chromosomes are simulated.  From which, " *
+        "$nqtl QTL of normal distribution are sampled.\n\n" *
         "The founder population is from {cyan}$macs{/cyan}. " *
         "Then the genotypes are dropped into F₁.  " *
         "Genome scan are performed on F₁.  " *
@@ -59,6 +63,8 @@ function e50b_gwas_30m_snp(;
     end
     for irpt in 1:nrpt
         tprintln("- Repeat $irpt")
+        tprintln("  - Elapse: ", canonicalize(now() - start_time))
+        
         ########## Base population ##########
         tprintln("  - Simulating $nch chromosomes")
         batch = e50b_chr_batch(nch)
@@ -85,6 +91,7 @@ function e50b_gwas_30m_snp(;
         end
         tprintln("  - Creating F1")
         Sim.drop(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-h1.bin"), pms, lms)
+        tprintln("    - Converting haplotypes into genotypes")
         Mat.hap2gt(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-f0.bin"))
         Mat.hap2gt(joinpath(dir, "$bar-h1.bin"),  joinpath(dir, "$bar-f1.bin"))
         rm(joinpath(dir, "$bar-hap.bin")) # clean dir
@@ -116,6 +123,8 @@ function e50b_gwas_30m_snp(;
             end
         end
         rm(joinpath(dir, "$bar-f1.bin"))
+        rm(joinpath(dir, "$bar-f0.bin"))
+        rm(joinpath(dir, "$bar-map.bin"))
     end
 end
 
