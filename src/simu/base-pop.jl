@@ -204,7 +204,7 @@ resulted from `macs_2_hap`.
 function macs_2_hap(raw)
     @info "this results in a nHap×nloci matrix."
     bar = randstring(5)         # barcode of this simulation
-    tprintln("  - Collect founder data {cyan}$bar{/cyan} from macs of chromosome: ")
+    tprintln("  - Collecting founder data {cyan}$bar{/cyan} from macs of chromosome: ")
     isdir(raw) || error("$raw not exists")
     raw[end] == '/' && (raw = raw[1:end-1])
     chrs = Int8[]
@@ -334,4 +334,18 @@ function sim_one_chr(dir, nid, bar;
     nlc, nhp = size(gt)
     Fio.writemat(joinpath(dir, "$bar-hap.bin"), gt)
     serialize(joinpath(dir, "$bar-map.ser"), DataFrame(chr=ones(Int8, nlc), pos = ps, frq = fq))
+end
+
+"""
+    function chr_batch(nch; nb = 6)
+Writing too many chromosome files, e.g., from `MaCS`, may cause disk I/O failure.
+This function divide the total number of chomosomes (`nch`) into several (`nb`) batches.
+"""
+function chr_batch(nch; nb = 6)
+    batch = []
+    for i in 1:nch÷nb
+        i > 0 && push!(batch, collect(1:nb) .+ (i-1) * nb)
+    end
+    nch % nb > 0 && push!(batch, collect(1:nch%nb) .+ (nch÷nb) * nb)
+    batch
 end

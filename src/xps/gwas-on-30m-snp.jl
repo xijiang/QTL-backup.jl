@@ -70,9 +70,10 @@ function e50b_gwas_30m_snp(;
                 run(pipeline(cmd,
                              stderr = joinpath(raw, "info.$i"),
                              stdout = joinpath(raw, "chr.$i")))
-                tprintln(" $i")
+                tprint(" $i")
             end
         end
+        println()
         bar = Sim.macs2haps(raw)
         rm(raw, recursive=true, force=true) # clean dir
 
@@ -92,8 +93,8 @@ function e50b_gwas_30m_snp(;
         ########## Simulate phenotypes and scan ##########
         tprintln(" - Random scan")
         nlc, nf1 = Fio.readdim(joinpath(dir, "$bar-f1.bin"))
-        g0 = Mmap.mmap(joinpath(dir, "$bar-f0.bin"), Matrix{Float64}, (nlc, nf0), 24)
-        g1 = Mmap.mmap(joinpath(dir, "$bar-f1.bin"), Matrix{Float64}, (nlc, nf1), 24)
+        g0 = Mmap.mmap(joinpath(dir, "$bar-f0.bin"), Matrix{Int8}, (nlc, nf0), 24)
+        g1 = Mmap.mmap(joinpath(dir, "$bar-f1.bin"), Matrix{Int8}, (nlc, nf1), 24)
         qtl = Sim.simQTL(g0, nqtl, d = Normal())[1]
         bv  = Sim.breeding_value(g1, qtl)
         pht = Sim.phenotype(bv, h²)
