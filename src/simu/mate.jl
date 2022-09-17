@@ -135,35 +135,27 @@ function drop(pg::Matrix{Int8}, og::Matrix{Int8}, pm, lms)
 end
     
 """
-    function drop(fph::String, foh::String, pm, lms)
-Drop haplotypes of parents in `fph` into `foh`, their offspring genotypes.
-Both these two matrices should be of dimension `nLoci × nHap`.
+    function drop_by_chr(fph::String, bar::String, pm, lms)
+Drop haplotypes of parents in `fph` into `bar-{1..nchr}.bin`, their offspring genotypes.
+Matrix in `fph` should be of dimension `nLoci × nHap`.
 Parents of each offspring are defined in `pm`, which are rows of ``pa ma``.
 Linkage map summary `lms` is from `summap` of module ``Sim``.
 """
-function drop(fph::String, foh::String, pm, lms)
+function drop_by_chr(fph::String, bar::String, pm, lms)
     nlc, nhp = Fio.readdim(fph)
     nof = size(pm)[1]
-    mph = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24) # mmap of parental haplotypes
+    mph = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24)
     
     tprintln("    - Dropping on chromosome:")
-    open(foh, "w+") do io
-        write(io, [nlc, 2nof, Fio.typec(Int8)])
-        moh = Mmap.mmap(io, Matrix{Int8}, (nlc, 2nof), 24) # mmap of offspring haplotypes
-        for cmp in groupby(lms, :chr)
-            tprint(" $(cmp.chr[1])")
-            fra, cln = cmp.bgn[1], cmp.nlc[1] # cln: chromosome loci number
-            til = cln + fra - 1
-            oh = zeros(Int8, cln, 2nof)
-            ph = copy(mph[fra:til, :])
-            cmp.bgn[1] = 1
-            drop(ph, oh, pm, cmp)
-            cmp.bgn[1] = fra
-            copyto!(view(moh, fra:til, :), oh)
-            Mmap.sync!(moh)
-        end
-        println()
+    for (chr, len, cln, fra) in eachrow(lms)
+        tprint(' ', chr)
+        til = cln + fra - 1
+        oh = zeros(Int8, cln, 2nof)
+        ph = copy(mph[fra:til, :])
+        drop(ph, oh, pm, DataFrame(chr=chr, len=len, nlc=cln, bgn=1))
+        Fio.writemat("$bar-$chr.bin", oh)
     end
+    println()
 end
 
 """
@@ -182,4 +174,26 @@ function reproduce(haps, ped, lms)
         zi = vec(view(haps, 2id, :))
         gamete(ma, zi, lms)
     end
+end
+
+"""
+    function collect_gt(bar, lms, loci)
+In case when genotypes are stored in different file names started with `bar` by chromosomes,
+This function collect the genotypes on `loci` in total genome order.
+Linkage map summary `lms` which file to find according to number in `loci`.
+"""
+function collect_gt(bar, lms, loci)
+    _, nid = Fio.readdim("$bar-$(lms.chr[1]).bin")
+    gt = zeros(Int8, length(loci), nid)
+
+    i = 0
+    for (chr, _, nlc, fra) in eachrow(lms)
+        fg = "$bar-$chr.bin"    # file name of the chromosome
+        cg = Mmap.mmap(fg, Matrix{Int8}, (nlc, nid), 24)
+        chunk = intersect(fra:fra+nlc-1, loci) .+ 1 .- fra
+        slc = length(chunk)     # number of selected loci
+        copyto!(view(gt, i+1:i+slc, :), view(cg, chunk, :))
+        i += slc
+    end
+    gt
 end

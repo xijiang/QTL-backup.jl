@@ -81,13 +81,13 @@ function local_peaks(ts; nw = 88)
 end
 
 """
-    function random_scan(fgt, pht, h²; mlc = 10_000)
+    function random_scan(fgt:String, pht, h²; mlc = 10_000)
 Given a file `fgt` containing the gentoypes of `nloc × nid`, phenotypes `pht`, and `h²`
 this function random group the genome of approximate `mlc` each.
 Each group is scanned and with emmax and Bayesian factor test statistics returned in a DataFrame.
 Results returned are sorted along the genome.
 """
-function random_scan(fgt, pht, h²; mlc = 10_000)
+function random_scan(fgt::String, pht, h²; mlc = 10_000)
     vp = var(pht)
     va = vp * h²
     nlc, nid = Fio.readdim(fgt)
@@ -120,3 +120,14 @@ function random_scan(fgt, pht, h²; mlc = 10_000)
     sort!(rst, :ord)
     rst
 end
+
+function blk_scan(gt::Matrix{Int8}, pht, h²)
+    vp = var(pht)
+    va = vp * h²
+    nlc, nid = size(gt)
+    f, a, lhs = rrblup_mme(ones(nid), gt, pht, h²)
+    LAPACK.potri!('L', lhs)
+    c1, c2 = gwas(lhs, a, va, window = 1)
+    return DataFrame(emmax = c1, bf = c2)
+end
+

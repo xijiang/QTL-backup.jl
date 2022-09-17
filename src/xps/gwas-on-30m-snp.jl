@@ -28,7 +28,7 @@ function e50b_gwas_30m_snp(;
     
     ########## Parameters ##########
     raw = joinpath(dir, "raw")
-    nf0 = nsr+ndm
+    nf0, nf1 = nsr+ndm, ndm*nsb
     rst = joinpath(dir, "$prj.txt")
 
     isdir(dir) || mkpath(dir)
@@ -62,8 +62,7 @@ function e50b_gwas_30m_snp(;
         println(io, "repeat     nmkr e10 e20 e50 b10 b20 b50")
     end
     for irpt in 1:nrpt
-        tprintln("- Repeat $irpt")
-        tprintln("  - Elapse: ", canonicalize(now() - start_time))
+        tprintln("- Repeat $irpt.   Start at", canonicalize(now() - start_time))
         
         ########## Base population ##########
         tprintln("  - Simulating $nch chromosomes")
@@ -84,31 +83,52 @@ function e50b_gwas_30m_snp(;
         rm(raw, recursive=true, force=true) # clean dir
 
         ########## Generate F₁ ##########
-        lms = Sim.summap(deserialize(joinpath(dir, "$bar-map.ser")))
+        lmp = deserialize(joinpath(dir, "$bar-map.ser"))
+        lms = Sim.summap(lmp)
         pms = begin
             tmp = Sim.random_mate(nsr, ndm)
             repeat(tmp, inner=(nsb, 1))
         end
         tprintln("  - Creating F1")
-        Sim.drop(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-h1.bin"), pms, lms)
+        Sim.drop_by_chr(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-h1"), pms, lms)
+
         tprintln("    - Converting haplotypes into genotypes")
+        tprint(" 0")
         Mat.hap2gt(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-f0.bin"))
-        Mat.hap2gt(joinpath(dir, "$bar-h1.bin"),  joinpath(dir, "$bar-f1.bin"))
+        for chr in lms.chr
+            tprint(' ', chr)
+            Mat.hap2gt(joinpath(dir, "$bar-h1-$chr.bin"),  joinpath(dir, "$bar-f1-$chr.bin"))
+            rm(joinpath(dir, "$bar-h1-$chr.bin"))
+        end
+        println()
         rm(joinpath(dir, "$bar-hap.bin")) # clean dir
-        rm(joinpath(dir, "$bar-h1.bin"))
 
         ########## Simulate phenotypes and scan ##########
-        tprintln(" - Random scan")
-        nlc, nf1 = Fio.readdim(joinpath(dir, "$bar-f1.bin"))
+        nlc = nrow(lmp)
+        tprintln("  - Random scan of $nlc SNP:")
         g0 = Mmap.mmap(joinpath(dir, "$bar-f0.bin"), Matrix{Int8}, (nlc, nf0), 24)
-        g1 = Mmap.mmap(joinpath(dir, "$bar-f1.bin"), Matrix{Int8}, (nlc, nf1), 24)
         qtl = Sim.simQTL(g0, nqtl, d = Normal())[1]
-        bv  = Sim.breeding_value(g1, qtl)
+        Q1  = Sim.collect_gt(joinpath(dir, "$bar-f1"), lms, qtl.locus)
+        bv  = vec(Q1'qtl.effect)
         pht = Sim.phenotype(bv, h²)
-        vp  = var(pht)
-        va  = var(bv)
+
+        # create blocks to scan
+        rlc = randperm(nlc)     # randomly permuted loci
+        tss = DataFrame(locus = Int[], emmax = Float64[], bf = Float64[])
         mlc = Aux.blksz(nlc, blk)
-        tss = Eva.random_scan(joinpath(dir, "$bar-f1.bin"), pht, h², mlc=mlc)
+        steps = collect(mlc:mlc:nlc)
+        nlc ∈ steps || push!(steps, nlc)
+        fra = 0
+        for step in steps
+            (step % 10mlc == 0 || step == nlc) && tprint(' ', step)
+            loci = sort(rlc[fra+1:fra+step])
+            fra = step
+            gt = Sim.collect_gt(joinpath(dir, "$bar-f1"), lms, loci)
+            r = Eva.blk_scan(gt, pht, h²)
+            append!(tss, DataFrame(locus = loci, emmax = r.emmax, bf = r.bf))
+        end
+        println()
+        sort!(tss, :locus)
         pka = Eva.find_peaks(tss.emmax)
         pkb = Eva.find_peaks(tss.bf)
         open(rst, "a") do io
@@ -125,8 +145,9 @@ function e50b_gwas_30m_snp(;
         rm(joinpath(dir, "$bar-f1.bin"))
         rm(joinpath(dir, "$bar-f0.bin"))
         rm(joinpath(dir, "$bar-map.bin"))
+        tprintln("  - Elapse time of Current repeat:", canonicalize(now() - start_time))
     end
 end
 
-function e50b_test(nch)
+function e50b_test()
 end
