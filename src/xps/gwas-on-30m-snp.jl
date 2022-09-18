@@ -66,7 +66,7 @@ function e50b_gwas_30m_snp(;
         
         ########## Base population ##########
         tprintln("  - Simulating $nch chromosomes")
-        batch = e50b_chr_batch(nch)
+        batch = e50b_chr_batch(nch, 10)
         for btch in batch
             Threads.@threads for i in btch
                 cmd = `$macs $(2nf0) $nbp
@@ -90,16 +90,13 @@ function e50b_gwas_30m_snp(;
             repeat(tmp, inner=(nsb, 1))
         end
         tprintln("  - Creating F1")
-        Sim.drop_by_chr(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-h1"), pms, lms)
+        Sim.drop_by_chr(joinpath(dir, "$bar-hap.bin"),
+                        joinpath(dir, "$bar-f1"),
+                        pms, lms, merge = true)
 
         tprintln("    - Converting haplotypes into genotypes")
         tprint(" 0")
         Mat.hap2gt(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-f0.bin"))
-        for chr in lms.chr
-            tprint(' ', chr)
-            Mat.hap2gt(joinpath(dir, "$bar-h1-$chr.bin"),  joinpath(dir, "$bar-f1-$chr.bin"))
-            rm(joinpath(dir, "$bar-h1-$chr.bin"))
-        end
         println()
         rm(joinpath(dir, "$bar-hap.bin")) # clean dir
 

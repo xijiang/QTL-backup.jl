@@ -135,13 +135,16 @@ function drop(pg::Matrix{Int8}, og::Matrix{Int8}, pm, lms)
 end
     
 """
-    function drop_by_chr(fph::String, bar::String, pm, lms)
-Drop haplotypes of parents in `fph` into `bar-{1..nchr}.bin`, their offspring genotypes.
+    function drop_by_chr(fph::String, bar::String, pm, lms; merge = true)
+Drop haplotypes of parents in `fph` into `bar-{1..nchr}.bin`,
+their offspring genotypes.
 Matrix in `fph` should be of dimension `nLoci × nHap`.
 Parents of each offspring are defined in `pm`, which are rows of ``pa ma``.
 Linkage map summary `lms` is from `summap` of module ``Sim``.
+
+When `merge = true`, the dropped haplotypes will be merged into genotypes.
 """
-function drop_by_chr(fph::String, bar::String, pm, lms)
+function drop_by_chr(fph::String, bar::String, pm, lms; merge = false)
     nlc, nhp = Fio.readdim(fph)
     nof = size(pm)[1]
     mph = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24)
@@ -153,7 +156,16 @@ function drop_by_chr(fph::String, bar::String, pm, lms)
         oh = zeros(Int8, cln, 2nof)
         ph = copy(mph[fra:til, :])
         drop(ph, oh, pm, DataFrame(chr=chr, len=len, nlc=cln, bgn=1))
-        Fio.writemat("$bar-$chr.bin", oh)
+        if merge
+            open("$bar-$chr.bin", "w") do io
+                write(io, [nlc, nof, Fio.typec(Int8)])
+                for i in 1:nof
+                    write(io, oh[:, 2i-1] + oh[:, 2i])
+                end
+            end
+        else
+            Fio.writemat("$bar-$chr.bin", oh)
+        end
     end
     println()
 end
@@ -188,12 +200,13 @@ function collect_gt(bar, lms, loci)
 
     i = 0
     for (chr, _, nlc, fra) in eachrow(lms)
-        fg = "$bar-$chr.bin"    # file name of the chromosome
-        cg = Mmap.mmap(fg, Matrix{Int8}, (nlc, nid), 24)
-        chunk = intersect(fra:fra+nlc-1, loci) .+ 1 .- fra
-        slc = length(chunk)     # number of selected loci
-        copyto!(view(gt, i+1:i+slc, :), view(cg, chunk, :))
-        i += slc
+        open("$bar-$chr.bin", "r") do ig
+            cg = Mmap.mmap(ig, Matrix{Int8}, (nlc, nid), 24)
+            chunk = intersect(fra:fra+nlc-1, loci) .+ 1 .- fra
+            slc = length(chunk)     # number of selected loci
+            copyto!(view(gt, i+1:i+slc, :), view(cg, chunk, :))
+            i += slc
+        end
     end
     gt
 end
