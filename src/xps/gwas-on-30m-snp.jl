@@ -62,7 +62,7 @@ function e50b_gwas_30m_snp(;
         println(io, "repeat     nmkr e10 e20 e50 b10 b20 b50")
     end
     for irpt in 1:nrpt
-        tprintln("- Repeat $irpt.   Start at", canonicalize(now() - start_time))
+        tprintln("- Repeat $irpt.   Started at", canonicalize(now() - start_time))
         
         ########## Base population ##########
         tprintln("  - Simulating $nch chromosomes")
@@ -118,11 +118,12 @@ function e50b_gwas_30m_snp(;
         fra = 0
         for step in steps
             (step % 10mlc == 0 || step == nlc) && tprint(' ', step)
-            loci = sort(rlc[fra+1:fra+step])
+            loci = sort(rlc[fra+1:step])
             fra = step
             gt = Sim.collect_gt(joinpath(dir, "$bar-f1"), lms, loci)
             r = Eva.blk_scan(gt, pht, h²)
             append!(tss, DataFrame(locus = loci, emmax = r.emmax, bf = r.bf))
+            gt = nothing
         end
         println()
         sort!(tss, :locus)
@@ -142,7 +143,7 @@ function e50b_gwas_30m_snp(;
         rm(joinpath(dir, "$bar-f1.bin"))
         rm(joinpath(dir, "$bar-f0.bin"))
         rm(joinpath(dir, "$bar-map.bin"))
-        tprintln("  - Elapse time of Current repeat:", canonicalize(now() - start_time))
+        tprintln("  - Elapsed time of repeat $irpt:", canonicalize(now() - start_time))
     end
 end
 

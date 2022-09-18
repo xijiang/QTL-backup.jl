@@ -151,7 +151,7 @@ function drop_by_chr(fph::String, bar::String, pm, lms; merge = false)
     
     tprintln("    - Dropping on chromosome:")
     for (chr, len, cln, fra) in eachrow(lms)
-        tprint(' ', chr)
+        tprint(" $chr")
         til = cln + fra - 1
         oh = zeros(Int8, cln, 2nof)
         ph = copy(mph[fra:til, :])
