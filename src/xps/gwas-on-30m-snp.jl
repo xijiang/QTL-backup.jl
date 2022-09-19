@@ -61,8 +61,9 @@ function e50b_gwas_30m_snp(;
     open(rst, "w") do io
         println(io, "repeat     nmkr e10 e20 e50 b10 b20 b50")
     end
+    tprintln("Simulation started at", now())
     for irpt in 1:nrpt
-        tprintln("- Repeat $irpt.   Started at", canonicalize(now() - start_time))
+        tprintln("- Repeat $irpt")
         
         ########## Base population ##########
         tprintln("  - Simulating $nch chromosomes")
