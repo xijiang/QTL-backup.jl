@@ -20,7 +20,7 @@ function e50b_gwas_30m_snp(;
                            nqtl = 1_000,
                            nrpt = 5,
                            nthreads = 10,
-                           blk = 20_000)
+                           brt = 1.2) # scan block size vs nid
     start_time = now()
     nthreads < 8 && (nthreads = 8)
     nthreads > Threads.nthreads() && (nthreads = Threads.nthreads() - 1)
@@ -61,50 +61,52 @@ function e50b_gwas_30m_snp(;
     open(rst, "w") do io
         println(io, "repeat     nmkr e10 e20 e50 b10 b20 b50")
     end
-    tprintln("Simulation started at", now())
+    tprintln("Started", Aux.msg_cur_time())
+    tprintln("- Simulate one generation genome data for all repeats")
+    
+    ########## Base population ##########
+    tprintln("  - Simulating $nch chromosomes")
+    batch = e50b_chr_batch(nch, 10)
+    for btch in batch
+        Threads.@threads for i in btch
+            cmd = `$macs $(2nf0) $nbp
+                                 -s $(seed[i]) -t $θ -r $ρ
+                                 -eN .25 5. -eN 2.50 15. -eN 25. 60. -eN 250. 120. -eN 2500. 1000.`
+            run(pipeline(cmd,
+                         stderr = joinpath(raw, "info.$i"),
+                         stdout = joinpath(raw, "chr.$i")))
+            tprint(" $i")
+        end
+    end
+    println()
+    bar = Sim.macs2haps(raw)
+    rm(raw, recursive=true, force=true) # clean dir
+    
+    ########## Generate F₁ ##########
+    lmp = deserialize(joinpath(dir, "$bar-map.ser"))
+    lms = Sim.summap(lmp)
+    pms = begin
+        tmp = Sim.random_mate(nsr, ndm)
+        repeat(tmp, inner=(nsb, 1))
+    end
+    tprintln("  - Creating F1")
+    Sim.drop_by_chr(joinpath(dir, "$bar-hap.bin"),
+                    joinpath(dir, "$bar-f1"),
+                    pms, lms, merge = true)
+
+    tprintln("    - Converting haplotypes into genotypes")
+    tprint(" 0")
+    Mat.hap2gt(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-f0.bin"))
+    println()
+    rm(joinpath(dir, "$bar-hap.bin")) # clean dir
+    nlc = nrow(lmp)
+    
     for irpt in 1:nrpt
         tprintln("- Repeat $irpt")
-        
-        ########## Base population ##########
-        tprintln("  - Simulating $nch chromosomes")
-        batch = e50b_chr_batch(nch, 10)
-        for btch in batch
-            Threads.@threads for i in btch
-                cmd = `$macs $(2nf0) $nbp
-                                     -s $(seed[i]) -t $θ -r $ρ
-                                     -eN .25 5. -eN 2.50 15. -eN 25. 60. -eN 250. 120. -eN 2500. 1000.`
-                run(pipeline(cmd,
-                             stderr = joinpath(raw, "info.$i"),
-                             stdout = joinpath(raw, "chr.$i")))
-                tprint(" $i")
-            end
-        end
-        println()
-        bar = Sim.macs2haps(raw)
-        rm(raw, recursive=true, force=true) # clean dir
-
-        ########## Generate F₁ ##########
-        lmp = deserialize(joinpath(dir, "$bar-map.ser"))
-        lms = Sim.summap(lmp)
-        pms = begin
-            tmp = Sim.random_mate(nsr, ndm)
-            repeat(tmp, inner=(nsb, 1))
-        end
-        tprintln("  - Creating F1")
-        Sim.drop_by_chr(joinpath(dir, "$bar-hap.bin"),
-                        joinpath(dir, "$bar-f1"),
-                        pms, lms, merge = true)
-
-        tprintln("    - Converting haplotypes into genotypes")
-        tprint(" 0")
-        Mat.hap2gt(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-f0.bin"))
-        println()
-        rm(joinpath(dir, "$bar-hap.bin")) # clean dir
 
         ########## Simulate phenotypes and scan ##########
-        nlc = nrow(lmp)
         tprintln("  - Random scan of $nlc SNP:")
-        g0 = Mmap.mmap(joinpath(dir, "$bar-f0.bin"), Matrix{Int8}, (nlc, nf0), 24)
+        g0  = Mmap.mmap(joinpath(dir, "$bar-f0.bin"), Matrix{Int8}, (nlc, nf0), 24)
         qtl = Sim.simQTL(g0, nqtl, d = Normal())[1]
         Q1  = Sim.collect_gt(joinpath(dir, "$bar-f1"), lms, qtl.locus)
         bv  = vec(Q1'qtl.effect)
@@ -113,18 +115,20 @@ function e50b_gwas_30m_snp(;
         # create blocks to scan
         rlc = randperm(nlc)     # randomly permuted loci
         tss = DataFrame(locus = Int[], emmax = Float64[], bf = Float64[])
+        blk = Int(round(nf1 * brt))
         mlc = Aux.blksz(nlc, blk)
         steps = collect(mlc:mlc:nlc)
         nlc ∈ steps || push!(steps, nlc)
-        fra = 0
+        fra, rev = 0, false
         for step in steps
             (step % 10mlc == 0 || step == nlc) && tprint(' ', step)
             loci = sort(rlc[fra+1:step])
             fra = step
-            gt = Sim.collect_gt(joinpath(dir, "$bar-f1"), lms, loci)
+            gt = Sim.collect_gt(joinpath(dir, "$bar-f1"), lms, loci, rev = rev)
             r = Eva.blk_scan(gt, pht, h²)
             append!(tss, DataFrame(locus = loci, emmax = r.emmax, bf = r.bf))
             gt = nothing
+            rev = !rev
         end
         println()
         sort!(tss, :locus)
@@ -132,7 +136,7 @@ function e50b_gwas_30m_snp(;
         pkb = Eva.find_peaks(tss.bf)
         open(rst, "a") do io
             print(io,
-                    lpad(irpt, 6),
+                  lpad(irpt, 6),
                   lpad(nlc, 9))
             for w in [10, 20, 50]
                 print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
@@ -141,12 +145,17 @@ function e50b_gwas_30m_snp(;
                 print(io, lpad(length(intersect(pkb.pos[1:w], qtl.locus)), 4))
             end
         end
-        rm(joinpath(dir, "$bar-f1.bin"))
-        rm(joinpath(dir, "$bar-f0.bin"))
-        rm(joinpath(dir, "$bar-map.bin"))
+        # rm(joinpath(dir, "$bar-f1.bin"))
+        # rm(joinpath(dir, "$bar-f0.bin"))
+        # rm(joinpath(dir, "$bar-map.bin"))
         tprintln("  - Elapsed time of repeat $irpt:", canonicalize(now() - start_time))
     end
 end
 
-function e50b_test()
+function e50b_test(loci)
+    bar = "dat/kyUTH"
+    lmp = deserialize("$bar-map.ser")
+    lms = Sim.summap(lmp)
+    #loci = sort(randperm(sum(lms.nlc))[1:20000])
+    @time gt = Sim.collect_gt("$bar-f1", lms, loci, rev=true)
 end

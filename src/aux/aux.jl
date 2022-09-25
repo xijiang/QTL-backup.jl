@@ -1,5 +1,5 @@
 module Aux
-using Term
+using Term, Dates
 
 include("even-group.jl")
 include("avail-mem.jl")

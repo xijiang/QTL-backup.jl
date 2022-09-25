@@ -15,6 +15,11 @@ They are grouped in the following sections:
 # Version log
 Newest first
 
+- v0.2.0: Genome scan on 30M SNP.
+  From this version, an `Xps` file is only included in `src/xps.jl` in the 
+  corresponding version. This is to avoid function incompatible as the package develops.
+  Later, a minor version increment means that a new test was done. The test was done
+  in a branch, which was later merged into main, resulting an increment of minor version.
 - v0.1.2: (large) GRM construction and inverse
   - QTL.MAT.grm
 - v0.1.1: quick genotype simulation, no LD.

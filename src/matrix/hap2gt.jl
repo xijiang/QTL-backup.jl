@@ -2,7 +2,7 @@
     function hap2gt(hps)
 Merge SNP haplotypes of `nLoc × 2nID` into genotypes of `nLoc × nID`.
 """
-function hap2gt(hps::Matrix{Int8})
+function hap2gt(hps::AbstractArray)
     nlc, nhp = size(hps)
     nid = nhp ÷ 2
     2nid ≠ nhp && error("Not a haplotype matrix")

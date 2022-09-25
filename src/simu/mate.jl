@@ -118,7 +118,7 @@ Linkage map summary `lms` is from `summap`.
 
 !!! ``Caution``: Merged data matrix from `MaCS` is `n-ID × n-loci`. Treat it with care.
 """
-function drop(pg::Matrix{Int8}, og::Matrix{Int8}, pm, lms)
+function drop(pg::AbstractArray, og::Matrix{Int8}, pm, lms)
     nf = size(pm)[1]
     Threads.@threads for id in 1:nf
         ip = pm[id, 1]
@@ -143,6 +143,7 @@ Parents of each offspring are defined in `pm`, which are rows of ``pa ma``.
 Linkage map summary `lms` is from `summap` of module ``Sim``.
 
 When `merge = true`, the dropped haplotypes will be merged into genotypes.
+It is also transposed before written to a file.
 """
 function drop_by_chr(fph::String, bar::String, pm, lms; merge = false)
     nlc, nhp = Fio.readdim(fph)
@@ -158,9 +159,13 @@ function drop_by_chr(fph::String, bar::String, pm, lms; merge = false)
         drop(ph, oh, pm, DataFrame(chr=chr, len=len, nlc=cln, bgn=1))
         if merge
             open("$bar-$chr.bin", "w") do io
-                write(io, [nlc, nof, Fio.typec(Int8)])
-                for i in 1:nof
-                    write(io, oh[:, 2i-1] + oh[:, 2i])
+                # write(io, [cln, nof, Fio.typec(Int8)])
+                # for i in 1:nof
+                #     write(io, oh[:, 2i-1] + oh[:, 2i])
+                # end
+                write(io, [nof, cln, Fio.typec(Int8)])
+                for i in 1:cln
+                    write(io, oh[i, 1:2:2nof] + oh[i, 2:2:2nof])
                 end
             end
         else
@@ -189,24 +194,31 @@ function reproduce(haps, ped, lms)
 end
 
 """
-    function collect_gt(bar, lms, loci)
+    function collect_gt(bar, lms, loci; rev = false)
 In case when genotypes are stored in different file names started with `bar` by chromosomes,
 This function collect the genotypes on `loci` in total genome order.
 Linkage map summary `lms` which file to find according to number in `loci`.
-"""
-function collect_gt(bar, lms, loci)
-    _, nid = Fio.readdim("$bar-$(lms.chr[1]).bin")
-    gt = zeros(Int8, length(loci), nid)
 
-    i = 0
-    for (chr, _, nlc, fra) in eachrow(lms)
+Note, the genotypes are of `nid × nlc` of each chromosome.
+When `rev = true`, the genotypes are collected in reverse order of chrosome numbers. 
+"""
+function collect_gt(bar, lms, loci; rev = false)
+    nid, _ = Fio.readdim("$bar-$(lms.chr[1]).bin")
+    # below commented codes are for matrix of `nlc × nid`.
+    #_, nid = Fio.readdim("$bar-$(lms.chr[1]).bin")
+    gt = zeros(Int8, length(loci), nid)
+    i, _lms = rev ? (length(loci), reverse(lms)) : (0, lms)
+    for (chr, _, nlc, fra) in eachrow(_lms)
+        chunk = intersect(fra:fra+nlc-1, loci) .+ 1 .- fra
+        slc = length(chunk)     # number of selected loci
+        rev && (i -= slc)
         open("$bar-$chr.bin", "r") do ig
-            cg = Mmap.mmap(ig, Matrix{Int8}, (nlc, nid), 24)
-            chunk = intersect(fra:fra+nlc-1, loci) .+ 1 .- fra
-            slc = length(chunk)     # number of selected loci
-            copyto!(view(gt, i+1:i+slc, :), view(cg, chunk, :))
-            i += slc
+            cg = Mmap.mmap(ig, Matrix{Int8}, (nid, nlc), 24)
+            copyto!(view(gt, i+1:i+slc, :), view(cg, :, chunk)')
+            # cg = Mmap.mmap(ig, Matrix{Int8}, (nlc, nid), 24)
+            # copyto!(view(gt, i+1:i+slc, :), view(cg, chunk, :))
         end
+        rev || (i += slc)
     end
     gt
 end

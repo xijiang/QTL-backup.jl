@@ -20,3 +20,8 @@ function separator(w = 2)
         Panel(width=w, box=:HEAVY, style="#9558B2") *
         Panel(width=w, box=:HEAVY, style="#CB3C33"))
 end
+
+function msg_cur_time()
+    msg = split(string(now()), 'T')
+    "at $(msg[2]) on $(msg[1])"
+end
