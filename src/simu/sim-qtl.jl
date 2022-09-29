@@ -37,16 +37,20 @@ function simQTL(gt::Matrix{Int8}, nqtl...; d = Laplace(), norm = true, ϵ = 1e-5
     for n in nqtl
         loci = sort(randperm(nlc)[1:n])
         efct = rand(d, n) .* rand([-1, 1], n)
-        if norm
-            Q = zeros(Int8, n, nid)
-            copyto!(Q, view(gt, loci, :))
-            norm_qtl(Q, efct, ϵ)
-        end
-        push!(qtl, (locus = loci, effect = efct))
+        Q = copy(view(gt, loci, :))
+        norm && norm_qtl(Q, efct, ϵ)
+        p = vec(mean(Q, dims = 2) ./ 2)
+        v = 2 .* p .* (1 .- p) .* efct .^ 2
+        push!(qtl, (locus = loci,
+                    effect = efct,
+                    ernk = Aux.sortrank(abs.(efct)),
+                    vrnk = Aux.sortrank(v)
+                    ))
     end
     qtl
 end
 
+#=
 """
     function simQTL(fgt::String, nqtl...; d = Laplace(), ϵ = 1e-5, norm = true)
 File layer of function `simQTL`.
@@ -54,19 +58,9 @@ File layer of function `simQTL`.
 function simQTL(fgt::String, nqtl...; d = Laplace(), ϵ = 1e-5, norm = true)
     nlc, nid = Fio.readdim(fgt)
     gt = Mmap.mmap(fgt, Matrix{Int8}, (nlc, nid), 24)
-    qtl = []
-    for n in nqtl
-        loci = sort(randperm(nlc)[1:n])
-        efct = rand(d, n) .* rand([-1, 1], n)
-        if norm
-            Q = zeros(Int8, n, nid)
-            copyto!(Q, view(gt, loci, :))
-            norm_qtl(Q, efct, ϵ)
-        end
-        push!(qtl, (locus = loci, effect = efct))
-    end
-    qtl
+    qtl = simQTL(gt, nqtl, d = d, norm = norm, ϵ = ϵ)
 end
+=#
 
 """
     function simPtQTL(gt, nqtl; d = MvNormal(zeros(2), I(2)))

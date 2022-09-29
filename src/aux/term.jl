@@ -22,6 +22,9 @@ function separator(w = 2)
 end
 
 function msg_cur_time()
-    msg = split(string(now()), 'T')
-    "at $(msg[2]) on $(msg[1])"
+    t = now()
+    y, _, d = yearmonthday(t)
+    w, M = dayname(t), monthname(t)
+    h, m, s = hour(t), minute(t), second(t)
+    "at $h:$m:$s, on $w, $M $d, $y"
 end

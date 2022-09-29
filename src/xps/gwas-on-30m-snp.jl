@@ -7,66 +7,19 @@ function e50b_chr_batch(nch, nb = 6)
     batch
 end    
 
-# This is a test to scan on ~30M SNP, to see if any QTL is covered by peaks.
-# code number: `echo Scan genome with ~30M SNP |md5sum` → e50b
-function e50b_gwas_30m_snp(;
-                           prj = "e50b",
-                           dir = "dat",
-                           nsr = 100,
-                           ndm = 200,
-                           nsb = 50,
-                           nch = 30,
-                           h²  = .6,
-                           nqtl = 1_000,
-                           nrpt = 5,
-                           nthreads = 10,
-                           brt = 1.2) # scan block size vs nid
-    start_time = now()
-    nthreads < 8 && (nthreads = 8)
-    nthreads > Threads.nthreads() && (nthreads = Threads.nthreads() - 1)
-    BLAS.set_num_threads(nthreads)
-    
-    ########## Parameters ##########
-    raw = joinpath(dir, "raw")
-    nf0, nf1 = nsr+ndm, ndm*nsb
-    rst = joinpath(dir, "$prj.txt")
-
-    isdir(dir) || mkpath(dir)
-    isdir(raw) || mkdir(raw)
-    macs = Sim.make_macs(tdir = dir)
-    μ, r, n₀, nbp = 1e-8, 1e-8, 10_000, Int(1e8)
-    θ, ρ = 4n₀ * μ, 4n₀ * r
-    seed = rand(Int32, nch)
-
-    ########## Messages ##########
-    title = "$prj: Scan genome with ~30M SNP"
-    subtitle = "Debugging"
-    # Description
-    desc = "{bold green}Summary of the simulation{/bold green}\n" *
-        "-------------------------\n" *
-        "This is a simulation with $nsr sires, " *
-        "$ndm dams, each dam has $nsb sibs.  " *
-        "The heritability of the trait is $h².  " *
-        "$nch chromosomes are simulated.  From which, " *
-        "$nqtl QTL of normal distribution are sampled.\n\n" *
-        "The founder population is from {cyan}$macs{/cyan}. " *
-        "Then the genotypes are dropped into F₁.  " *
-        "Genome scan are performed on F₁.  " *
-        "The simulation will repeat $nrpt times.  " *
-        "All jobs are working in directory {cyan}$dir{/cyan}.\n\n" *
-        "Results are written in {cyan}$dir/$prj.txt{/cyan}"
-    println(Aux.xpsmsg(desc, title, subtitle))
-    Aux.separator(2)
-
-    open(rst, "w") do io
-        println(io, "repeat     nmkr e10 e20 e50 b10 b20 b50")
-    end
-    tprintln("Started", Aux.msg_cur_time())
-    tprintln("- Simulate one generation genome data for all repeats")
-    
+function e50b_sim_f0_f1(nch, dir, ne, nsr, ndm, nsb)
     ########## Base population ##########
     tprintln("  - Simulating $nch chromosomes")
+    seed = rand(Int32, nch)
     batch = e50b_chr_batch(nch, 10)
+    raw = joinpath(dir, "raw")
+    nf0, nf1 = nsr+ndm, ndm*nsb
+
+    isdir(raw) || mkdir(raw)
+    macs = Sim.make_macs(tdir = dir)
+    μ, r, nbp = 1e-8, 1e-8, Int(1e8)
+    θ, ρ = 4ne * μ, 4ne * r
+
     for btch in batch
         Threads.@threads for i in btch
             cmd = `$macs $(2nf0) $nbp
@@ -94,19 +47,80 @@ function e50b_gwas_30m_snp(;
                     joinpath(dir, "$bar-f1"),
                     pms, lms, merge = true)
 
-    tprintln("    - Converting haplotypes into genotypes")
-    tprint(" 0")
+    tprintln("    - Converting F0 haplotypes into genotypes")
     Mat.hap2gt(joinpath(dir, "$bar-hap.bin"), joinpath(dir, "$bar-f0.bin"))
-    println()
     rm(joinpath(dir, "$bar-hap.bin")) # clean dir
-    nlc = nrow(lmp)
+    bar, lms
+end
+
+# This is a test to scan on ~30M SNP, to see if any QTL is covered by peaks.
+# code number: `echo Scan genome with ~30M SNP |md5sum` → e50b
+function e50b_gwas_30m_snp(;
+                           prj = "e50b",
+                           dir = "dat",
+                           ne  = 10_000,
+                           nsr = 100,
+                           ndm = 200,
+                           nsb = 50,
+                           nch = 30,
+                           h²  = .6,
+                           nqtl = 1_000,
+                           nrpt = 5,
+                           nthreads = 10,
+                           brt = 1.2, # scan block size vs nid
+                           newpop = true)
+    start_time = now()
+
+    # Result directory and file
+    isdir(dir) || mkpath(dir)
+    rst = joinpath(dir, "$prj-$(year(start_time))-$prj-$(month(start_time))-$(day(start_time)).txt")
+    
+    # Decide how many threads to run
+    nthreads < 8 && (nthreads = 8)
+    nthreads > Threads.nthreads() && (nthreads = Threads.nthreads() - 1)
+    BLAS.set_num_threads(nthreads)
+    
+    ########## Messages ##########
+    title = "$prj: Scan genome with ~30M SNP"
+    subtitle = "Debugging"
+    # Description
+    desc = "{bold green}Summary of the simulation{/bold green}\n" *
+        "-------------------------\n" *
+        "This is a simulation with $nsr sires, " *
+        "$ndm dams, each dam has $nsb sibs.  " *
+        "The heritability of the trait is $h².  " *
+        "$nch chromosomes are simulated.  From which, " *
+        "$nqtl QTL of normal distribution are sampled.\n\n" *
+        "The founder population is from {cyan}macs{/cyan}. " *
+        "Then the genotypes are dropped into F₁.  " *
+        "Genome scan are performed on F₁.  " *
+        "The simulation will repeat $nrpt times.  " *
+        "All jobs are working in directory {cyan}$dir{/cyan}.\n\n" *
+        "Results are written in {cyan}$dir/$prj.txt{/cyan}"
+    println(Aux.xpsmsg(desc, title, subtitle))
+    Aux.separator(2)
+
+    open(rst, "w") do io
+        println(io, "repeat     nmkr e10 e20 e50 b10 b20 b50")
+    end
+    tprintln("Started", Aux.msg_cur_time(), '\n')
+    bar = lms = nothing
+    if !newpop
+        tprintln("- Simulate one generation genome data for all repeats")
+        bar, lms = e50b_sim_f0_f1(nch, dir, ne, nsr, ndm, nsb)
+    end
     
     for irpt in 1:nrpt
         tprintln("- Repeat $irpt")
-
+        if newpop
+            bar, lms = e50b_sim_f0_f1(nch, dir, ne, nsr, ndm, nsb)
+        end
+        nlc = sum(lms.nlc)
+        w = ndigits(nlc) + length("  - Random scan on ")
+        
         ########## Simulate phenotypes and scan ##########
-        tprintln("  - Random scan of $nlc SNP:")
-        g0  = Mmap.mmap(joinpath(dir, "$bar-f0.bin"), Matrix{Int8}, (nlc, nf0), 24)
+        tprintln("  - Random scan on $nlc SNP:")
+        g0  = Mmap.mmap(joinpath(dir, "$bar-f0.bin"), Matrix{Int8}, (nlc, nsr + ndm), 24)
         qtl = Sim.simQTL(g0, nqtl, d = Normal())[1]
         Q1  = Sim.collect_gt(joinpath(dir, "$bar-f1"), lms, qtl.locus)
         bv  = vec(Q1'qtl.effect)
@@ -115,13 +129,12 @@ function e50b_gwas_30m_snp(;
         # create blocks to scan
         rlc = randperm(nlc)     # randomly permuted loci
         tss = DataFrame(locus = Int[], emmax = Float64[], bf = Float64[])
-        blk = Int(round(nf1 * brt))
+        blk = Int(round(ndm * nsb * brt))
         mlc = Aux.blksz(nlc, blk)
         steps = collect(mlc:mlc:nlc)
         nlc ∈ steps || push!(steps, nlc)
         fra, rev = 0, false
         for step in steps
-            (step % 10mlc == 0 || step == nlc) && tprint(' ', step)
             loci = sort(rlc[fra+1:step])
             fra = step
             gt = Sim.collect_gt(joinpath(dir, "$bar-f1"), lms, loci, rev = rev)
@@ -129,6 +142,8 @@ function e50b_gwas_30m_snp(;
             append!(tss, DataFrame(locus = loci, emmax = r.emmax, bf = r.bf))
             gt = nothing
             rev = !rev
+            _, _t = split(string(now()), 'T')
+            tprint("\r$(lpad(step, w))", "SNP tested.", _t)
         end
         println()
         sort!(tss, :locus)
@@ -138,24 +153,26 @@ function e50b_gwas_30m_snp(;
             print(io,
                   lpad(irpt, 6),
                   lpad(nlc, 9))
-            for w in [10, 20, 50]
-                print(io, lpad(length(intersect(pka.pos[1:w], qtl.locus)), 4))
-            end
-            for w in [10, 20, 50]
-                print(io, lpad(length(intersect(pkb.pos[1:w], qtl.locus)), 4))
-            end
+            covered, qrank_e = Eva.count_peaks(pka, qtl)
+            print(io, join(lpad.(covered, 4)))
+            covered, qrank_b = Eva.count_peaks(pkb, qtl)
+            print(io, join(lpad.(covered, 4)))
+            println(io, ' ', join(qrank_e, ", "))
+            println(io, repeat(' ', 39), ' ', join(qrank_b, ", "))
         end
-        # rm(joinpath(dir, "$bar-f1.bin"))
-        # rm(joinpath(dir, "$bar-f0.bin"))
-        # rm(joinpath(dir, "$bar-map.bin"))
+        if newpop
+            for i in 1:nch
+                rm(joinpath(dir, "$bar-f1-$i.bin"))
+            end
+            rm(joinpath(dir, "$bar-f0.bin"))
+            rm(joinpath(dir, "$bar-map.ser"))
+        end
         tprintln("  - Elapsed time of repeat $irpt:", canonicalize(now() - start_time))
     end
+    tprintln("Stopped", Aux.msg_cur_time())
+    tprintln("Total time used:", canonicalize(now() - start_time))
 end
 
 function e50b_test(loci)
-    bar = "dat/kyUTH"
-    lmp = deserialize("$bar-map.ser")
-    lms = Sim.summap(lmp)
-    #loci = sort(randperm(sum(lms.nlc))[1:20000])
-    @time gt = Sim.collect_gt("$bar-f1", lms, loci, rev=true)
+    #qtl = Sim.simQTL(g0, nqtl, d = Normal())[1]
 end

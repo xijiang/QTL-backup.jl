@@ -101,7 +101,6 @@ function random_scan(fgt::String, pht, h²; mlc = 10_000)
     loci = randperm(nlc)
     println()
     tprintln(lpad("Total $nlc SNP", 75))
-    cent = nlc ÷ 10
     for stop in stops
         blk = sort(loci[start:stop])
         gbk = zeros(Int8, length(blk), nid) # A genome block
@@ -111,16 +110,19 @@ function random_scan(fgt::String, pht, h²; mlc = 10_000)
         c1, c2 = gwas(lhs, a, va, window = 1)
         append!(rst, DataFrame(ord = blk, emmax = c1, bf = c2))
         start = stop + 1
-        if stop ≥ cent
-            elapse = canonicalize(now() - stime)
-            tprintln(lpad("$stop SNP tested,  elapsed time:", w), elapse)
-            cent += nlc ÷ 10
-        end
+        _, _t = split(string(now()), 'T')
+        tprint("\r$(lpad(stop, 71))", "SNP tested.", _t)
     end
+    println()
     sort!(rst, :ord)
     rst
 end
 
+"""
+    function blk_scan(gt::Matrix{Int8}, pht, h²)
+This function simply calculate the test statistics of each locus in `gt`,
+given phenotypes `pht` and heritability `h²`.
+"""
 function blk_scan(gt::Matrix{Int8}, pht, h²)
     vp = var(pht)
     va = vp * h²
@@ -131,3 +133,24 @@ function blk_scan(gt::Matrix{Int8}, pht, h²)
     return DataFrame(emmax = c1, bf = c2)
 end
 
+"""
+    function count_peaks(pks, qtl; top = [10, 20, 50])
+This function count how many true QTL are covered by `top = [10, 20, 50]` of the peaks collection, `pks`.
+QTL information is in `qtl`, which was from `Sim.simQTL`.
+This function also return the rank of the true QTL found in a vector of tuples.
+The first element of a tuple is the rank according to absolute QTL effect.
+The second is on `2pqa²`.
+"""
+function count_peaks(pks, qtl; top = [10, 20, 50])
+    covered = Int[]
+    qrank = []
+    for w in top
+        trueQTL = intersect(pks.pos[1:w], qtl.locus)
+        push!(covered, length(trueQTL))
+        for q in trueQTL
+            i = findnext(x -> x == q, qtl.locus, 1)
+            push!(qrank, (qtl.ernk[i], qtl.vrnk[i]))
+        end
+    end
+    return covered, unique(qrank)
+end

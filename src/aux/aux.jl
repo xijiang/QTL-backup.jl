@@ -1,5 +1,5 @@
 module Aux
-using Term, Dates
+using Term, Dates, DataFrames
 
 include("even-group.jl")
 include("avail-mem.jl")
