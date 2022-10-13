@@ -1,8 +1,9 @@
 module Fio                      # my I/O
-using Mmap, CodecZlib
+using Mmap, CodecZlib, DataFrames
 
 include("type.jl")
 include("mio.jl")
+include("ped.jl")
 
 export readmat, writemat, matsub, read012, fml23c, snp2gt
 

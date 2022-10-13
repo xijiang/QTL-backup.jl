@@ -73,7 +73,7 @@ function e50b_gwas_30m_snp(;
 
     # Result directory and file
     isdir(dir) || mkpath(dir)
-    rst = joinpath(dir, "$prj-$(year(start_time))-$prj-$(month(start_time))-$(day(start_time)).txt")
+    rst = joinpath(dir, "$prj-$(year(start_time))-$(month(start_time))-$(day(start_time)).txt")
     
     # Decide how many threads to run
     nthreads < 8 && (nthreads = 8)
@@ -101,6 +101,16 @@ function e50b_gwas_30m_snp(;
     Aux.separator(2)
 
     open(rst, "w") do io
+        println(io, "# Ne    = $ne")
+        println(io, "# nSire = $nsr")
+        println(io, "# nDam  = $ndm")
+        println(io, "# nSib  = $nsb")
+        println(io, "# nChr  = $nch")
+        println(io, "# h^2   = $h²")
+        println(io, "# nQTL  = $nqtl")
+        println(io, "# nRpt  = $nrpt")
+        println(io, "# brt   = $brt  random block size / population size")
+        println(io, "# newpop = $newpop\n\n")
         println(io, "repeat     nmkr e10 e20 e50 b10 b20 b50")
     end
     tprintln("Started", Aux.msg_cur_time(), '\n')
