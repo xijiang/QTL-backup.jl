@@ -1,5 +1,5 @@
 module Fio                      # my I/O
-using Mmap, CodecZlib, DataFrames
+using Mmap, CodecZlib, DataFrames, Term
 
 include("type.jl")
 include("mio.jl")

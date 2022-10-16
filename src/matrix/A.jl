@@ -16,6 +16,50 @@ function kinship(ped, i, j)
 end
 
 """
+    function kinship(ped, i::Int, j::Int, dic::Dict{Tuple{Int, Int}, Float64})
+Recursive kinship calculation with kinship of ID pair `(i, j)`
+stored in dictionary `dic`.
+The memory usage may be bigger than Meuwissen and Luo 1992, or Quaas 1995.
+The speed is however standable.
+The recursive algorithm is also easy to understand.
+"""
+function kinship(ped, i::Int, j::Int, dic::Dict{Tuple{Int, Int}, Float64})
+    (i == 0 || j == 0) && return 0
+    ip, im = ped[i, :]
+    if i == j
+        haskey(dic, (i, i)) || (dic[(i, i)] = 1 + .5kinship(ped, ip, im, dic))
+        return dic[(i, i)]
+    end
+    if i < j
+        jp, jm = ped[j, :]
+        haskey(dic, (i, jp)) || (dic[(i, jp)] = kinship(ped, i, jp, dic))
+        haskey(dic, (i, jm)) || (dic[(i, jm)] = kinship(ped, i, jm, dic))
+        return .5(dic[(i, jp)] + dic[(i, jm)])
+    end
+    return .5(kinship(ped, j, ip, dic) + kinship(ped, j, im, dic))
+end
+
+"""
+    function ped_F(ped; force = false)
+- When column `:F` is not in DataFrame `ped`, this function calculate
+inbreeding coefficients of every ID, and add a `:F` column in `ped`.
+- If `:F` exists, and `force = true`, drop `:F` from `ped` and do above.
+- Or do nothing.
+"""
+function ped_F(ped; force = false)
+    if "F" ∈ names(ped)
+        force ? select!(ped, Not([:F])) : return
+    end
+    N = nrow(ped)
+    F = zeros(N)
+    dic = Dict{Tuple{Int, Int}, Float64}()
+    for i in 1:N
+        F[i] = kinship(ped, i, i, dic) - 1
+    end
+    ped.F = F
+end
+
+"""
     function D4A(ped; inverse = false)
 Given a sorted and recoded pedigree, this function return the `D` diagonal matrix for `A`
 matrix calculation.
