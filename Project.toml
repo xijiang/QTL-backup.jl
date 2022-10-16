@@ -1,7 +1,7 @@
 name = "QTL"
 uuid = "272614b1-7590-4f3c-ab34-bb6a9ad933d0"
 authors = ["Xijiang Yu <xijiang@users.noreply.github.com>"]
-version = "0.2.0-3"
+version = "0.2.1-1"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
@@ -14,6 +14,7 @@ Mmap = "a63ad114-7e13-5084-954f-fe012c677804"
 Octavian = "6fd5a793-0b7e-452c-907f-f8bfe9c57db4"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Term = "22787eb5-b846-44ae-b979-8e399b8463ab"

@@ -1,5 +1,6 @@
 module Mat
-using LinearAlgebra, Octavian, Statistics, Mmap, ..Aux, ..Fio
+using LinearAlgebra, Octavian, Statistics, Mmap, DataFrames
+using SparseArrays, ..Aux, ..Fio
 
 include("grm.jl")
 include("cholesky.jl")
