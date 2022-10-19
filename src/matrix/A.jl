@@ -2,6 +2,7 @@
     function kinship(ped, i, j)
 ---
 This function is handy if just to calculate relationship of a few (pairs of) ID.
+The first 2 columns of ped must be `pa` and `ma`.
 It can also speed up by adding `Thread.@threads` before your pair loop.
 """
 function kinship(ped, i, j)
@@ -18,7 +19,7 @@ end
 """
     function kinship(ped, i::Int, j::Int, dic::Dict{Tuple{Int, Int}, Float64})
 Recursive kinship calculation with kinship of ID pair `(i, j)`
-stored in dictionary `dic`.
+stored in dictionary `dic`.  The first 2 columns of ped must be `pa` and `ma`.
 The memory usage may be bigger than Meuwissen and Luo 1992, or Quaas 1995.
 The speed is however standable.
 The recursive algorithm is also easy to understand.
@@ -40,34 +41,49 @@ function kinship(ped, i::Int, j::Int, dic::Dict{Tuple{Int, Int}, Float64})
 end
 
 """
-    function ped_F(ped; force = false)
+    function ped_F(ped; force = false, mdc = 1_000_000)
 - When column `:F` is not in DataFrame `ped`, this function calculate
 inbreeding coefficients of every ID, and add a `:F` column in `ped`.
 - If `:F` exists, and `force = true`, drop `:F` from `ped` and do above.
 - Or do nothing.
+
+The relationship dictionary is limited to 1M to save memory
+when the pedigree is too large.
 """
-function ped_F(ped; force = false)
+function ped_F(ped; force = false, mdc = 1_000_000)
     if "F" ∈ names(ped)
         force ? select!(ped, Not([:F])) : return
     end
     N = nrow(ped)
     F = zeros(N)
     dic = Dict{Tuple{Int, Int}, Float64}()
-    for i in 1:N
+    @showprogress for i in 1:N
         F[i] = kinship(ped, i, i, dic) - 1
     end
     ped.F = F
+    nothing
 end
 
 """
-    function D4A(ped; inverse = false)
-Given a sorted and recoded pedigree, this function return the `D` diagonal matrix for `A`
-matrix calculation.
+    function ped_D(ped; force = false)
+Calculate diagonals of `D` for `A` or `A⁻¹` calculation.
+It is computed as a vector and a new column of `ped` of name `:D`.
 """
-function D4A(ped; inverse = false)
+function ped_D(ped; force = false)
+    if "D" ∈ names(ped)
+        force ? select!(ped, Not([:D])) : return
+    end
+    "F" ∈ names(ped) || ped_F(ped)
     N = nrow(ped)
-    D = zeros(N)
-    
+    D = .5ones(N)
+    @showprogress for i in 1:N
+        pa, ma = ped[i, :]
+        vp = (pa == 0) ? -.25 : .25ped.F[pa]
+        vm = (ma == 0) ? -.25 : .25ped.F[ma]
+        D[i] -= (vp + vm)
+    end
+    ped.D = D
+    nothing
 end
 
 """
@@ -114,6 +130,11 @@ function T4AI(ped)
     T = sparse(R, C, V)
 end
 
+"""
+    function T4A(ped; m = 1000)
+Calculate `T`, which can be used to construct `A` as `TDT'`.
+`T` can also be deemed as genetic contribution matrix.
+"""
 function T4A(ped; m = 1000)
     N = nrow(ped)
     N > m && error("Pedigree size ($N > $m), too big")
@@ -134,14 +155,14 @@ function T4A(ped; m = 1000)
 end
 
 """
-    function A(ped; m = 1000)
+    function Amat(ped; m = 1000)
 Given a pedigree `ped`,
 this function returns a full numerical relationship matrix, `A`.
 This function is better for small pedigrees, and for demonstration only.
 The maximal matrix size is thus limited to 1000.
 One can try to set `m` to a bigger value if RAM is enough.
 """
-function A(ped; m = 1000)
+function Amat(ped; m = 1000)
     N = nrow(ped)
     N > m && error("Pedigree size ($N > $m) too big")
     A = zeros(N, N) + I(N)
@@ -155,12 +176,52 @@ function A(ped; m = 1000)
     end
     A
 end
-
+        
 """
-    function A(T, D, range)
-Construct sub matrix of `A` of `range` with `T`, and `D`.
+    function A22(ped, idc, list::Vector{String}, oo::String)
+Construct sub matrix of `A` of ID in `list`.
+Dictionary `idc` records the coded ID, i.e., row numbe, in `ped`.
+It was created when reading `ped`.
+To prevent out of memory error, results are written to file `oo`.
 """
-function A(T, D, range)
+function A22(ped, idc, list::Vector{String}, oo::String)
+    N = length(list)
+    ilst = zeros(Int, N)
+    i = 0
+    for id in list
+        i += 1
+        haskey(idc, id) ? (ilst[i] = idc[id]) : error("$id not found in idc")
+    end
+    df = DataFrame(x = Int[], y = Int[], v = Float64[])
+    th = Threads.nthreads() * 10000 # number of pairs to calculate per batch
+    open(oo, "w+") do io
+        write(io, [N, N, Fio.typec(Float64)])
+        rst = Mmap.mmap(io, Matrix{Float64}, (N, N), 24)
+        @showprogress 1 "Parallel computing A[i, j]" for i in 1:N
+            for j in 1:i
+                push!(df, (ilst[i], ilst[j], 0))
+                if nrow(df) == th
+                    Threads.@threads for k in 1:th
+                        df.v[k] = kinship(ped, df.x[k], df.y[k])
+                    end
+                    for (x, y, v) in eachrow(df)
+                        A[x, y] = v
+                    end
+                    empty!(df)
+                end
+            end
+        end
+        @info "Finalizing ..."
+        if !isempty(pairs)
+            Threads.@threads for k in 1:nrow(df)
+                df.v[k] = kinship(ped, df.x[k], df.y[k])
+            end
+            for (x, y, v) in eachrow(df)
+                A[x, y] = v
+            end
+        end
+    end
+    nothing
 end
 
 """
@@ -170,6 +231,40 @@ where `A` is the numerical relationship matrix.
 """
 function Ai(ped)
     T = T4AI(ped)
-    D = D4A(ped, inverse = true)
+    "D" ∈ names(ped) || ped_D(ped)
+    D = Diagonal(1. ./ ped.D)
     T'D*T
 end
+
+"""
+
+"""
+function effID(ped, idc, lst)
+    epp = Set{Int}()
+    id = Set{Int}()
+    for s in lst
+        push!(id, idc[s])
+    end
+    ng = 1
+    while !isempty(id)
+        union!(epp, unique(id))
+        pm = Set{Int}()
+        ng += 1
+        for i in id
+            ped.pa[i] == 0 || push!(pm, ped.pa[i])
+            ped.ma[i] == 0 || push!(pm, ped.ma[i])
+        end
+        id = pm
+        @show ng, length(epp), length(pm)
+    end
+    sort(collect(epp))
+end
+
+#=
+function restore()
+    ped = deserialize("dat/ped.ser")
+    idc = deserialize("dat/idc.ser")
+    lst = deserialize("dat/list.ser")
+    ped, idc, lst
+end
+=#

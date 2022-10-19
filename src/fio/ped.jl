@@ -47,7 +47,7 @@ function readped(pf; skip = 0, unknown = "0")
 
     N = nrow(opd)
     while N > 0
-        tprint("\r\tNumber of ID left to process: $N / $(nrow(opd))")
+        tprint("\r\tNumber of ID in $pf left to process: $N / $(nrow(opd))")
         M = N
         for (id, pa, ma) in eachrow(opd)
             haskey(idc, id) && continue
